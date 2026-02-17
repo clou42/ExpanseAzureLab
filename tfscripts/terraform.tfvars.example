@@ -1,0 +1,27 @@
+config = {
+  # Choose region to deploy to. This influences cost. 
+  # Keep in mind: Not all regions offer all machine types. Not all regions are availiable from everythere in the world
+  region = "westeurope"
+  # Public IP for firewall whitelisting on DBs and VMs. 
+  client_ip = "198.51.100.1"
+  # Subscription ID to deploy in 
+  subscription_id = "12345678-1234-1234-1234-123456781234"
+  # Resource group name to create for the Lab
+  resource_grp_name = "ExpanseAzureSecLab"
+  # SSH Key to access the Rocinante VM
+  rocinante_ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC0v7PpfcHv8Dh6/VlqnhUB3ImBi/2YbHCXaMBeDEk7gD3T2y11MXouuptyIzWy1b+hJpCNDYvdnsEIWvsoLdVJIcSSeRcBena514GRpwCpifE8uTxf175YHENzt/CD6tnXJjKpAUMau2qTRxyd4g65bqCODmGEE3drgnqhzxBT4wVwHjiHPnS9NBSuQWo6QSXkdMIJOfIeyMxOZKGllXK7DCeVCbXIMl0h/GIoU3lZKem2x/aj37mh5eZTLJrI2RpLzqqdXIRXS6NKZQ6HxuULqlZnvrq9dtedG7WitRj4pJ9z24nneKre9ywoeOfI2PRidftzRGujAL2BuzsCKJouzv18atvU+p//82XyKHLeFQWyzmf/4vncAHK71q90Zi+hTyvO5bpiDqAE/t6aPbMecltXj6Pm8+M/kCZUYoNlyyz1d4rlX4kX+X8qJs8KI5jinEYtvvpllfvDNi46di2DSgh3oqYfu1GegesuDyHuQE0YyE5NAUIgxvHpecJJwui6gyGY4b0vAs/t4sP4MFdLPHFPa/RY6qEzFvcz28vxT1xbQ5Kg62FL7iBOmX0Wn0b6+VZ2AknX3E8kOZZZQ/jtBzRCQKjnKlP07n8s/XDbUTyTJcT1seH9Tu3R2Xs95u6uc2KXNH0pzfk5Ce8XzE6x/Nf4LRaBzA/cBp73/lcwSw=="
+  # SSH Key to access the Scopuli VM
+  scopuli_ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC0v7PpfcHv8Dh6/VlqnhUB3ImBi/2YbHCXaMBeDEk7gD3T2y11MXouuptyIzWy1b+hJpCNDYvdnsEIWvsoLdVJIcSSeRcBena514GRpwCpifE8uTxf175YHENzt/CD6tnXJjKpAUMau2qTRxyd4g65bqCODmGEE3drgnqhzxBT4wVwHjiHPnS9NBSuQWo6QSXkdMIJOfIeyMxOZKGllXK7DCeVCbXIMl0h/GIoU3lZKem2x/aj37mh5eZTLJrI2RpLzqqdXIRXS6NKZQ6HxuULqlZnvrq9dtedG7WitRj4pJ9z24nneKre9ywoeOfI2PRidftzRGujAL2BuzsCKJouzv18atvU+p//82XyKHLeFQWyzmf/4vncAHK71q90Zi+hTyvO5bpiDqAE/t6aPbMecltXj6Pm8+M/kCZUYoNlyyz1d4rlX4kX+X8qJs8KI5jinEYtvvpllfvDNi46di2DSgh3oqYfu1GegesuDyHuQE0YyE5NAUIgxvHpecJJwui6gyGY4b0vAs/t4sP4MFdLPHFPa/RY6qEzFvcz28vxT1xbQ5Kg62FL7iBOmX0Wn0b6+VZ2AknX3E8kOZZZQ/jtBzRCQKjnKlP07n8s/XDbUTyTJcT1seH9Tu3R2Xs95u6uc2KXNH0pzfk5Ce8XzE6x/Nf4LRaBzA/cBp73/lcwSw=="
+  # Username to access the Scopuli VM via SSH
+  scopuli_ssh_user = "darren"
+  # DB SA on Tycho MSSQL Server
+  tycho_sa_username = "fred"
+  # DB SA on Tycho MSSQL Server password
+  tycho_sa_password = "[tycho_sa_password]"
+  # A identifier that will be part of all UP / SP names to map them if needed. No special characters or it breaks resource names.
+  lab_uniq_id = "Cool"
+  # When will tokens etc time out.
+  end_date = "2025-12-27T13:37:42Z"
+  # This controls whether all secrets etc. are printed (for testing) or if only the tycho-terminal webapp fqdn is printed (for ctf).
+  verbose = true
+}

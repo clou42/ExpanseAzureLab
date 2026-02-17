@@ -1,0 +1,13 @@
+first_name,last_name,department,job_title,password
+Jim,Holden,Rocinante,Captain,[SET_A_PASSWORD_HERE!]
+Alex,Kamal,Rocinante,Pilot,[SET_A_PASSWORD_HERE!]
+Amos,Burton,Rocinante,Crew,[SET_A_PASSWORD_HERE!]
+Naomi,Nagata,Rocinante,Engineer,[SET_A_PASSWORD_HERE!]
+Chrisjen,Avasarala,UN,Secretary-General,[SET_A_PASSWORD_HERE!]
+Bobbie,Draper,Martian Navy,Gunnery Sergeant,[SET_A_PASSWORD_HERE!]
+Josephus,Miller,Star Helix,Detective,[SET_A_PASSWORD_HERE!]
+Clarissa,Mao,UN,Civilian Technician,[SET_A_PASSWORD_HERE!]
+Camina,Drummer,OPA,Commander,[SET_A_PASSWORD_HERE!]
+Marco,Inaros,Free Navy,Commander,[SET_A_PASSWORD_HERE!]
+Filip,Inaros,Free Navy,Crew,[SET_A_PASSWORD_HERE!]
+

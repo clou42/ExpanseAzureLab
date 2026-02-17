@@ -1,0 +1,1 @@
+Driver={PostgreSQL Unicode};Server=tcp:??.database.windows.net,1433;Database=tycho-??;Uid=fred;Pwd=unknown;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;
