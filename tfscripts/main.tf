@@ -290,21 +290,14 @@ locals {
 }
 
 
-# This is a check to prevent azure race conditions (role assign before propagation).
-data "azurerm_role_definition" "pilot_role_definition" {
-  name  = "VM_Rocinante_RunCommand_ExtensionsWrite_${var.config.lab_uniq_id}"
-  scope = azurerm_resource_group.res-114.id
-
-  depends_on = [azurerm_role_definition.vm_rocinante_exec]
-}
-
 # Pilots may execute RunCommand and write Extensions on the Rocinante VM
+# Use role_definition_id (not name) so the custom role is found at VM scope
 resource "azurerm_role_assignment" "pilot_role_assign" {
   scope                = azurerm_linux_virtual_machine.rocinante.id
-  role_definition_name = "VM_Rocinante_RunCommand_ExtensionsWrite_${var.config.lab_uniq_id}"
+  role_definition_id   = azurerm_role_definition.vm_rocinante_exec.role_definition_resource_id
   principal_id         = local.pilot_group_id
   depends_on = [
-    data.azurerm_role_definition.pilot_role_definition,
+    azurerm_role_definition.vm_rocinante_exec,
     azurerm_linux_virtual_machine.rocinante
   ]
 }
@@ -1272,13 +1265,20 @@ resource "azurerm_user_assigned_identity" "tycho_directory_reader" {
   resource_group_name = azurerm_resource_group.res-114.name
 }
 
+# Wait for the managed identity's service principal to propagate in Azure AD before assigning directory role
+resource "time_sleep" "tycho_directory_reader_propagation" {
+  create_duration = "60s"
+  depends_on     = [azurerm_user_assigned_identity.tycho_directory_reader]
+}
+
 resource "azuread_directory_role" "directory_readers" {
   display_name = "Directory Readers"
 }
 
 resource "azuread_directory_role_assignment" "tycho_directory_reader_assignment" {
   principal_object_id = azurerm_user_assigned_identity.tycho_directory_reader.principal_id
-  role_id             = basename(resource.azuread_directory_role.directory_readers.id)
+  role_id             = azuread_directory_role.directory_readers.template_id
+  depends_on          = [time_sleep.tycho_directory_reader_propagation]
 }
 
 
