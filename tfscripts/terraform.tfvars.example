@@ -23,5 +23,5 @@ config = {
   # When will tokens etc time out.
   end_date = "2025-12-27T13:37:42Z"
   # This controls whether all secrets etc. are printed (for testing) or if only the tycho-terminal webapp fqdn is printed (for ctf).
-  verbose = true
+  verbose = false
 }
