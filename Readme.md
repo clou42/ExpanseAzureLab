@@ -47,6 +47,8 @@ Set a lifetime (timeout) for the generated SP secrets via the `end_date` paramet
 
 Also set an administrator password for the tycho db server via the parameter: `tycho_sa_password`.
 
+Last, decide on how long you want your service account secrets to be valid and cofigure via the `end_date` parameter.
+
 ### users.csv
 
 Create a copy of the `users.csv.example` file with the name `users.csv`. This will be your lab configuration for the users. 
