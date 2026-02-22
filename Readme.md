@@ -215,13 +215,13 @@ command.
 
 This works like a charm and I did not have any problems in the last several iterations of the lab.
 
-In case something still goes wrong here and not everything is cleaned up (happens very rarely) just try again to:
+After performing the destroy, all resources and users are deleted. To redeploy, perform the deployment steps again.
+
+### Cleanup-troubleshoot
+In case something goes wrong with cleanup and not everything is cleaned up (should not happen, but let's say you internet gives out during the operation) just try again to:
 ```
 terraform destroy
 ```
-
-After performing the destroy, all resources and users are deleted. To redeploy, perform the deployment steps again.
-
 
 You might run into the `for each` dependency issues again here. In that case first do:
 ```
@@ -232,9 +232,6 @@ followed by an additional
 ```
 terraform destroy
 ```
-
-In bad cases repeat this twice, then open an issue. Normally everything should be cleaned up after the **first** `destroy` operation.
-
 ---
 
 **License:** This project is licensed under GPL-3.0. See [LICENSE](LICENSE) for details.
