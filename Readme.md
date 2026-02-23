@@ -43,9 +43,9 @@ scopuli_ssh_key = "ssh-rsa ..."
 
 You should also set a unique identifier that will be part of all user principal / service principal names to map them if needed via the parameter `lab_uniq_id`. No special characters are allowed for this parameter since it breaks resource names otherwise.
 
-Set a lifetime (timeout) for the generated SP secrets via the `end_date` parameter.
-
 Also set an administrator password for the tycho db server via the parameter: `tycho_sa_password`.
+
+Last, decide on how long you want your service account secrets to be valid and cofigure via the `end_date` parameter.
 
 ### users.csv
 
@@ -197,13 +197,6 @@ Now the lab should be correctly configured in you Azure subscription inside a ne
 **In case of errors when rolling out:**
 First, try to run `terraform apply` again. Sometimes the Azure backend is too slow in updating information in the background and Terraform may read stale role/identity info due to Azure propagation delays. If rolling out the lab permanently does not work open an issue.
 
-**Known issue:**
-
-The following error appears fairly often and to my understanding, is a "race condition" in Azure. The role definitely exists already but Azure thinks it doesn't because internal states are stale sometimes. `terraform apply` again solves this issue.
-```
-Error: loading Role Definition List: could not find role ..
-```
-
 ## Architecture
 
 The general assets can be found in the following diagram (or `AzureLabAssets.pdf`):
@@ -222,13 +215,13 @@ command.
 
 This works like a charm and I did not have any problems in the last several iterations of the lab.
 
-In case something still goes wrong here and not everything is cleaned up (happens very rarely) just try again to:
+After performing the destroy, all resources and users are deleted. To redeploy, perform the deployment steps again.
+
+### Cleanup-troubleshoot
+In case something goes wrong with cleanup and not everything is cleaned up (should not happen, but let's say you internet gives out during the operation) just try again to:
 ```
 terraform destroy
 ```
-
-After performing the destroy, all resources and users are deleted. To redeploy, perform the deployment steps again.
-
 
 You might run into the `for each` dependency issues again here. In that case first do:
 ```
@@ -239,9 +232,6 @@ followed by an additional
 ```
 terraform destroy
 ```
-
-In bad cases repeat this twice, then open an issue. Normally everything should be cleaned up after the **first** `destroy` operation.
-
 ---
 
 **License:** This project is licensed under GPL-3.0. See [LICENSE](LICENSE) for details.
