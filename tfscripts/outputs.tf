@@ -75,7 +75,7 @@ output "tenant_id" {
 # Firewall info
 # -------------------------
 output "whitelisted_client_ip" {
-  value = var.config.verbose ? "The client_ip ${var.config.client_ip} is whitelisted in the DB and VM firewalls." : null
+  value = var.config.verbose ? "The client_ip ${var.config.client_ip} is whitelisted in the DB, VM firewalls, and tycho-terminal web app (and SCM)." : null
 }
 
 # -------------------------

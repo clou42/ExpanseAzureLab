@@ -2,7 +2,7 @@ config = {
   # Choose region to deploy to. This influences cost. 
   # Keep in mind: Not all regions offer all machine types. Not all regions are availiable from everythere in the world
   region = "westeurope"
-  # Public IP for firewall whitelisting on DBs and VMs. 
+  # Public IP for firewall whitelisting on DBs, VMs, and webapp. 
   client_ip = "198.51.100.1"
   # Subscription ID to deploy in 
   subscription_id = "12345678-1234-1234-1234-123456781234"
@@ -19,9 +19,9 @@ config = {
   # DB SA on Tycho MSSQL Server password
   tycho_sa_password = "[tycho_sa_password]"
   # A identifier that will be part of all UP / SP names to map them if needed. No special characters or it breaks resource names.
-  lab_uniq_id = "Cool"
+  lab_uniq_id = "MCRN"
   # When will tokens etc time out.
   end_date = "2025-12-27T13:37:42Z"
   # This controls whether all secrets etc. are printed (for testing) or if only the tycho-terminal webapp fqdn is printed (for ctf).
-  verbose = true
+  verbose = false
 }

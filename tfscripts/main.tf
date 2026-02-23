@@ -15,10 +15,28 @@ variable "config" {
     verbose           = bool
   })
 }
-# Create random integer for unique names
+# Create random integer for unique names (used for Ganymede, tycho server, etc.)
 resource "random_integer" "ri" {
   min = 10000
   max = 99999
+}
+
+# Unguessable suffixes for publicly reachable resources (web app and blob storage)
+# so that lab URLs cannot be enumerated or guessed.
+resource "random_string" "storage_suffix" {
+  length  = 15
+  lower   = true
+  upper   = false
+  numeric  = true
+  special = false
+}
+
+resource "random_string" "webapp_suffix" {
+  length  = 16
+  lower   = true
+  upper   = false
+  numeric  = true
+  special = false
 }
 
 # Retrieve domain information
@@ -291,7 +309,6 @@ locals {
 
 
 # Pilots may execute RunCommand and write Extensions on the Rocinante VM
-# Use role_definition_id (not name) so the custom role is found at VM scope
 resource "azurerm_role_assignment" "pilot_role_assign" {
   scope                = azurerm_linux_virtual_machine.rocinante.id
   role_definition_id   = azurerm_role_definition.vm_rocinante_exec.role_definition_resource_id
@@ -507,7 +524,7 @@ resource "azurerm_storage_account" "storage_labpallas" {
   account_tier                     = "Standard"
   cross_tenant_replication_enabled = false
   location                         = azurerm_resource_group.res-114.location
-  name                             = "labpallas${random_integer.ri.result}"
+  name                             = "labpallas${random_string.storage_suffix.result}"
   resource_group_name              = azurerm_resource_group.res-114.name
   depends_on = [
     azurerm_resource_group.res-114,
@@ -517,7 +534,7 @@ resource "azurerm_storage_account" "storage_labpallas" {
 ### Create storage container
 
 resource "azurerm_storage_container" "pallas" {
-  name                  = "pallas-${random_integer.ri.result}"
+  name                  = "pallas-${random_string.storage_suffix.result}"
   storage_account_id  = azurerm_storage_account.storage_labpallas.id
   container_access_type = "blob"
 }
@@ -596,7 +613,7 @@ resource "azurerm_storage_blob" "alex_credentials_json" {
 
 # ---------- App Service Plan (Linux) ----------
 resource "azurerm_service_plan" "app_tycho_terminal_serviceplan" {
-  name                = "webapp-tycho-terminal-serviceplan-${random_integer.ri.result}"
+  name                = "webapp-tycho-terminal-serviceplan-${random_string.webapp_suffix.result}"
   location            = azurerm_resource_group.res-114.location
   resource_group_name = azurerm_resource_group.res-114.name
   os_type             = "Linux"
@@ -675,7 +692,7 @@ locals {
 
 # Point the Web App to the SAS URL (Run-From-Package)
 resource "azurerm_linux_web_app" "tycho-terminal" {
-  name                = "tycho-terminal-${random_integer.ri.result}"
+  name                = "tycho-terminal-${random_string.webapp_suffix.result}"
   location            = azurerm_resource_group.res-114.location
   resource_group_name = azurerm_resource_group.res-114.name
   service_plan_id     = azurerm_service_plan.app_tycho_terminal_serviceplan.id
@@ -684,6 +701,27 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
     always_on        = true
     app_command_line = "node app.js"
     application_stack { node_version = "22-lts" }
+
+    # Restrict access to client_ip only (same whitelist as DB and VM NSGs)
+    dynamic "ip_restriction" {
+      for_each = var.config.client_ip != "" ? [1] : []
+      content {
+        ip_address = "${var.config.client_ip}/32"
+        action     = "Allow"
+        name       = "AllowClientIP"
+        priority   = 100
+      }
+    }
+    # Restrict SCM (Kudu) to same IP so deployment/config is not exposed
+    dynamic "scm_ip_restriction" {
+      for_each = var.config.client_ip != "" ? [1] : []
+      content {
+        ip_address = "${var.config.client_ip}/32"
+        action     = "Allow"
+        name       = "AllowClientIP"
+        priority   = 100
+      }
+    }
   }
 
   identity { type = "SystemAssigned" }
