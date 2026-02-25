@@ -703,6 +703,9 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
     application_stack { node_version = "22-lts" }
 
     # Restrict access to client_ip only (same whitelist as DB and VM NSGs)
+    ip_restriction_default_action        = var.config.client_ip != "" ? "Deny" : "Allow"
+    scm_ip_restriction_default_action   = var.config.client_ip != "" ? "Deny" : "Allow"
+
     dynamic "ip_restriction" {
       for_each = var.config.client_ip != "" ? [1] : []
       content {
