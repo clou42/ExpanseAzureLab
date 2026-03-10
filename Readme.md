@@ -107,7 +107,11 @@ Afterwards, apply the rest of the TF script with:
 terraform apply
 ```
 
-Make sure to accept the changes by typing `yes` when Terraform asks for confirmation. After successfully creating the lab environment, the `tycho_terminal_webapp_fqdn` is printed. This is the starting point for a CTF you can try.
+Make sure to accept the changes (if you approve) by typing `yes` when Terraform asks for confirmation. 
+
+**Optional:** You can automate the three apply steps by running `./deploy.sh` from the project root. It runs the targeted applies in the correct order. Pass `--auto-approve` for non-interactive deployment: `./deploy.sh --auto-approve`. To update the whitelisted client IP in `terraform.tfvars` before deploying, use `--client-ip <ip>` to specify it explicitly or `--use-current-ip` to auto-detect your public IP (requires `terraform.tfvars` to exist).
+
+After successfully creating the lab environment, the `tycho_terminal_webapp_fqdn` is printed. This is the starting point for a CTF you can try.
 If you instead want a VERY verbose output for direct access to all users and resources, set the `verbose` flag in the `terraform.tfvars` file to true:
 ```
 KeysToTheScopuli_MI_principal_id = "12345678-1234-1234-1234-123456781234"
