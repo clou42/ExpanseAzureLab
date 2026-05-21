@@ -18,6 +18,8 @@ config = {
   tycho_sa_username = "fred"
   # DB SA on Tycho MSSQL Server password
   tycho_sa_password = "[tycho_sa_password]"
+  # Admin password for the Donnager Windows VM
+  donnager_admin_password = "[donnager_admin_pw]"
   # A identifier that will be part of all UP / SP names to map them if needed. No special characters or it breaks resource names.
   lab_uniq_id = "MCRN"
   # When will tokens etc time out.

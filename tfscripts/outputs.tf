@@ -33,6 +33,20 @@ output "Scopuli_admin_user" {
   value       = var.config.verbose ? azurerm_linux_virtual_machine.scopuli.admin_username : null
 }
 
+output "Donnager_public_IP" {
+  description = "This value allows connecting via RDP to the Donnager Windows VM. Only works if client_ip is configured."
+  value       = var.config.verbose ? azurerm_public_ip.donnager_ip.ip_address : null
+}
+
+output "Donnager_admin_user" {
+  description = "Admin username for the Donnager Windows VM."
+  value       = var.config.verbose ? azurerm_windows_virtual_machine.donnager.admin_username : null
+}
+
+output "Donnager_MI_principal_id" {
+  description = "This ID allows utilizing the user-assigned identity on the Donnager Windows VM to access Key Vault."
+  value       = var.config.verbose ? azurerm_user_assigned_identity.jovian_access.principal_id : null
+}
 # -------------------------
 # Users
 # -------------------------
@@ -107,6 +121,33 @@ output "sp_credentials" {
   } : null
 }
 
+# -------------------------
+# Storage Account Info
+# -------------------------
+output "storage_account_name" {
+  description = "Storage account name for blob storage and file share access"
+  value       = var.config.verbose ? azurerm_storage_account.storage_labpallas.name : null
+}
+
+output "blob_container_name" {
+  description = "Blob container name where credentials.json and other files are stored"
+  value       = var.config.verbose ? azurerm_storage_container.pallas.name : null
+}
+
+output "credentials_json_blob_url" {
+  description = "Public URL to access credentials.json from blob storage"
+  value       = var.config.verbose ? "https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/credentials.json" : null
+}
+
+output "file_share_name" {
+  description = "Azure File Share name where credentials.json is exposed via SMB"
+  value       = var.config.verbose ? azurerm_storage_share.credentials_share.name : null
+}
+
+output "file_share_unc_path" {
+  description = "UNC path to access the file share (requires storage account key or Azure AD authentication)"
+  value       = var.config.verbose ? "\\\\${azurerm_storage_account.storage_labpallas.name}.file.core.windows.net\\${azurerm_storage_share.credentials_share.name}" : null
+}
 # -------------------------
 # Optional debug outputs
 # -------------------------

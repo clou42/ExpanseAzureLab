@@ -1,18 +1,19 @@
 variable "config" {
   description = "Configuration values including credentials, keys, and metadata."
   type = object({
-    client_ip         = string
-    subscription_id   = string
-    rocinante_ssh_key = string
-    scopuli_ssh_key   = string
-    region            = string
-    resource_grp_name = string
-    scopuli_ssh_user  = string
-    tycho_sa_username = string
-    tycho_sa_password = string
-    lab_uniq_id       = string
-    end_date          = string
-    verbose           = bool
+    client_ip               = string
+    subscription_id         = string
+    rocinante_ssh_key       = string
+    scopuli_ssh_key         = string
+    region                  = string
+    resource_grp_name       = string
+    scopuli_ssh_user        = string
+    tycho_sa_username       = string
+    tycho_sa_password       = string
+    donnager_admin_password = string
+    lab_uniq_id             = string
+    end_date                = string
+    verbose                 = bool
   })
 }
 # Create random integer for unique names (used for Ganymede, tycho server, etc.)
@@ -27,7 +28,7 @@ resource "random_string" "storage_suffix" {
   length  = 15
   lower   = true
   upper   = false
-  numeric  = true
+  numeric = true
   special = false
 }
 
@@ -35,7 +36,7 @@ resource "random_string" "webapp_suffix" {
   length  = 16
   lower   = true
   upper   = false
-  numeric  = true
+  numeric = true
   special = false
 }
 
@@ -119,14 +120,14 @@ resource "azuread_application" "app" {
 }
 
 resource "azuread_service_principal" "sp" {
-  for_each       = azuread_application.app
+  for_each  = azuread_application.app
   client_id = each.value.client_id
 }
 
 resource "azuread_application_password" "pwd" {
-  for_each              = azuread_application.app
+  for_each       = azuread_application.app
   application_id = each.value.id
-  end_date              = local.end_date
+  end_date       = local.end_date
 }
 
 ## Create directory custom roles
@@ -202,6 +203,25 @@ resource "azurerm_role_definition" "vm_scopuli_exec" {
   ]
 }
 
+# Create Donnager (Windows VM) RCE role
+resource "azurerm_role_definition" "vm_donnager_exec" {
+  name        = "VM_Donnager_RunCommand_ExtensionsWrite_${var.config.lab_uniq_id}"
+  scope       = azurerm_resource_group.res-114.id
+  description = "Allows to run Commands and write extensions to the Donnager Windows VM."
+
+  permissions {
+    actions = [
+      "Microsoft.Compute/virtualMachines/runCommand/*",
+      "Microsoft.Compute/virtualMachines/extensions/*",
+      "Microsoft.Compute/virtualMachines/read"
+    ]
+    not_actions = []
+  }
+
+  assignable_scopes = [
+    azurerm_resource_group.res-114.id
+  ]
+}
 # Unused for now. Could give Scopuli MI SA on tycho instead of read/write only.
 # resource "azurerm_role_definition" "sql_tycho_admin_rw" {
 #   name        = "SQL_Tycho_admin_rw"
@@ -310,9 +330,9 @@ locals {
 
 # Pilots may execute RunCommand and write Extensions on the Rocinante VM
 resource "azurerm_role_assignment" "pilot_role_assign" {
-  scope                = azurerm_linux_virtual_machine.rocinante.id
-  role_definition_id   = azurerm_role_definition.vm_rocinante_exec.role_definition_resource_id
-  principal_id         = local.pilot_group_id
+  scope              = azurerm_linux_virtual_machine.rocinante.id
+  role_definition_id = azurerm_role_definition.vm_rocinante_exec.role_definition_resource_id
+  principal_id       = local.pilot_group_id
   depends_on = [
     azurerm_role_definition.vm_rocinante_exec,
     azurerm_linux_virtual_machine.rocinante
@@ -356,9 +376,9 @@ resource "azurerm_role_assignment" "crew_role_assign" {
 # TODO: Might be fixed by now and therefore obsolete.
 
 resource "azurerm_role_assignment" "azure_cli_ssh_fix" {
-  scope                = azurerm_network_interface.res-7.id
+  scope              = azurerm_network_interface.res-7.id
   role_definition_id = azurerm_role_definition.rocinate_nic_access_fix.role_definition_resource_id
-  principal_id         = local.crew_group_id
+  principal_id       = local.crew_group_id
   depends_on = [
     azuread_user.users,
     azurerm_role_definition.rocinate_nic_access_fix
@@ -366,9 +386,9 @@ resource "azurerm_role_assignment" "azure_cli_ssh_fix" {
 }
 
 resource "azurerm_role_assignment" "azure_cli_ssh_fix_ip" {
-  scope                = azurerm_public_ip.res-15.id
+  scope              = azurerm_public_ip.res-15.id
   role_definition_id = azurerm_role_definition.rocinate_ip_access_fix.role_definition_resource_id
-  principal_id         = local.crew_group_id
+  principal_id       = local.crew_group_id
   depends_on = [
     azuread_user.users,
     azurerm_role_definition.rocinate_ip_access_fix
@@ -377,13 +397,37 @@ resource "azurerm_role_assignment" "azure_cli_ssh_fix_ip" {
 
 # KeysToTheScopuli MI is allowed to RunCommands and write Extensions on the Scopuli VM
 resource "azurerm_role_assignment" "keystothescopuli_role_assign" {
-  scope                = azurerm_linux_virtual_machine.scopuli.id
+  scope              = azurerm_linux_virtual_machine.scopuli.id
   role_definition_id = azurerm_role_definition.vm_scopuli_exec.role_definition_resource_id
-  principal_id         = azurerm_user_assigned_identity.keystothescopuli.principal_id
+  principal_id       = azurerm_user_assigned_identity.keystothescopuli.principal_id
   depends_on = [
     azurerm_role_definition.vm_scopuli_exec,
     azurerm_linux_virtual_machine.scopuli,
     azurerm_user_assigned_identity.keystothescopuli
+  ]
+}
+
+# Scopuli MI is allowed to RunCommands on Donnager (augments attack chain: Scopuli -> Donnager -> Key Vault)
+resource "azurerm_role_assignment" "scopuli_donnager_assign" {
+  scope              = azurerm_windows_virtual_machine.donnager.id
+  role_definition_id = azurerm_role_definition.vm_donnager_exec.role_definition_resource_id
+  principal_id       = azurerm_user_assigned_identity.scopuli_sql_provisioner.principal_id
+  depends_on = [
+    azurerm_role_definition.vm_donnager_exec,
+    azurerm_windows_virtual_machine.donnager,
+    azurerm_user_assigned_identity.scopuli_sql_provisioner
+  ]
+}
+
+# Donnager MI can access Key Vault secrets (augments attack chain: Scopuli -> Donnager -> Key Vault)
+resource "azurerm_role_assignment" "donnager_kv_secrets_user" {
+  scope                = azurerm_key_vault.vault_ganymede.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.jovian_access.principal_id
+  depends_on = [
+    azurerm_key_vault.vault_ganymede,
+    azurerm_user_assigned_identity.jovian_access,
+    azurerm_windows_virtual_machine.donnager
   ]
 }
 
@@ -426,7 +470,7 @@ resource "azurerm_role_assignment" "sg_admin_assignment" {
 
 ## Create Key Vault
 resource "azurerm_key_vault" "vault_ganymede" {
-  rbac_authorization_enabled  = true
+  rbac_authorization_enabled = true
   location                   = azurerm_resource_group.res-114.location
   name                       = "Ganymede-${random_integer.ri.result}"
   resource_group_name        = azurerm_resource_group.res-114.name
@@ -526,6 +570,10 @@ resource "azurerm_storage_account" "storage_labpallas" {
   location                         = azurerm_resource_group.res-114.location
   name                             = "labpallas${random_string.storage_suffix.result}"
   resource_group_name              = azurerm_resource_group.res-114.name
+  # Enable public network access for file shares
+  public_network_access_enabled = true
+  # Allow public access to file services
+  allow_nested_items_to_be_public = true
   depends_on = [
     azurerm_resource_group.res-114,
   ]
@@ -535,7 +583,7 @@ resource "azurerm_storage_account" "storage_labpallas" {
 
 resource "azurerm_storage_container" "pallas" {
   name                  = "pallas-${random_string.storage_suffix.result}"
-  storage_account_id  = azurerm_storage_account.storage_labpallas.id
+  storage_account_id    = azurerm_storage_account.storage_labpallas.id
   container_access_type = "blob"
 }
 
@@ -575,7 +623,92 @@ resource "azurerm_storage_blob" "alex_credentials_json" {
   ]
 }
 
+### Create Azure File Share to expose credentials.json
+resource "azurerm_storage_share" "credentials_share" {
+  name               = "medina"
+  storage_account_id = azurerm_storage_account.storage_labpallas.id
+  quota              = 1     # 1 GB quota
+  enabled_protocol   = "SMB" # Enable SMB protocol
 
+  depends_on = [
+    azurerm_storage_account.storage_labpallas
+  ]
+}
+
+# Account SAS for Donnager script: blob read + file create/write (no SharedKey signing in VM)
+data "azurerm_storage_account_sas" "donnager_secrets" {
+  connection_string = azurerm_storage_account.storage_labpallas.primary_connection_string
+  https_only        = true
+  start             = timestamp()
+  expiry            = timeadd(timestamp(), "8760h") # 1 year
+
+  services {
+    blob  = true
+    queue = false
+    file  = true
+    table = false
+  }
+
+  resource_types {
+    service   = false
+    container = true
+    object    = true
+  }
+
+  permissions {
+    read    = true
+    add     = false
+    create  = true
+    write   = true
+    delete  = true
+    list    = true
+    update  = false
+    process = false
+    tag     = false
+    filter  = false
+  }
+
+  depends_on = [
+    azurerm_storage_account.storage_labpallas,
+    azurerm_storage_share.credentials_share,
+    azurerm_storage_blob.alex_credentials_json,
+  ]
+}
+
+locals {
+  donnager_secrets_sas_b64 = base64encode(data.azurerm_storage_account_sas.donnager_secrets.sas)
+}
+
+# Grant Donnager VM's managed identity permissions to read blob and write to file share
+resource "azurerm_role_assignment" "donnager_storage_blob_reader" {
+  scope                = azurerm_storage_account.storage_labpallas.id
+  role_definition_name = "Storage Blob Data Reader"
+  principal_id         = azurerm_user_assigned_identity.jovian_access.principal_id
+  depends_on = [
+    azurerm_user_assigned_identity.jovian_access,
+    azurerm_storage_account.storage_labpallas
+  ]
+}
+
+resource "azurerm_role_assignment" "donnager_storage_file_contributor" {
+  scope                = azurerm_storage_account.storage_labpallas.id
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  principal_id         = azurerm_user_assigned_identity.jovian_access.principal_id
+  depends_on = [
+    azurerm_user_assigned_identity.jovian_access,
+    azurerm_storage_account.storage_labpallas
+  ]
+}
+
+resource "azurerm_role_assignment" "donnager_storage_account_contributor" {
+  scope                = azurerm_storage_account.storage_labpallas.id
+  role_definition_name = "Storage Account Contributor"
+  principal_id         = azurerm_user_assigned_identity.jovian_access.principal_id
+  depends_on = [
+    azurerm_user_assigned_identity.jovian_access,
+    azurerm_storage_account.storage_labpallas
+  ]
+}
 ## Inactive and unused for now
 ## Create app
 
@@ -682,12 +815,12 @@ data "azurerm_storage_account_sas" "tycho_pkg" {
     filter  = false
   }
 
-  depends_on = [ azurerm_storage_blob.tycho_package ]
+  depends_on = [azurerm_storage_blob.tycho_package]
 }
 
 locals {
-  pkg_sas_url            = "https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/${azurerm_storage_blob.tycho_package.name}${data.azurerm_storage_account_sas.tycho_pkg.sas}"
-  pkg_sas_url_sensitive  = sensitive(local.pkg_sas_url) # avoid printing the SAS in plans
+  pkg_sas_url           = "https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/${azurerm_storage_blob.tycho_package.name}${data.azurerm_storage_account_sas.tycho_pkg.sas}"
+  pkg_sas_url_sensitive = sensitive(local.pkg_sas_url) # avoid printing the SAS in plans
 }
 
 # Point the Web App to the SAS URL (Run-From-Package)
@@ -703,8 +836,8 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
     application_stack { node_version = "22-lts" }
 
     # Restrict access to client_ip only (same whitelist as DB and VM NSGs)
-    ip_restriction_default_action        = var.config.client_ip != "" ? "Deny" : "Allow"
-    scm_ip_restriction_default_action   = var.config.client_ip != "" ? "Deny" : "Allow"
+    ip_restriction_default_action     = var.config.client_ip != "" ? "Deny" : "Allow"
+    scm_ip_restriction_default_action = var.config.client_ip != "" ? "Deny" : "Allow"
 
     dynamic "ip_restriction" {
       for_each = var.config.client_ip != "" ? [1] : []
@@ -734,16 +867,16 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
     WEBSITE_NODE_DEFAULT_VERSION = "~22"
 
     # Restart the app when the local ZIP changes
-    PACKAGE_HASH                 = local.local_pkg_sha256
+    PACKAGE_HASH = local.local_pkg_sha256
     # Optional one-time trigger to force remount immediately:
     # DEPLOYMENT_TRIGGER          = timestamp()
     # tell db.service.js to use SQL in prod
-    DB_PROVIDER                  = "mssql"
+    DB_PROVIDER = "mssql"
 
     # host/db for both MI & CS
-    AZURE_SQL_SERVER             = azurerm_mssql_server.tycho.fully_qualified_domain_name
-    AZURE_SQL_DATABASE           = azurerm_mssql_database.tycho-db.name
-    AZURE_SQL_PORT               = "1433"
+    AZURE_SQL_SERVER   = azurerm_mssql_server.tycho.fully_qualified_domain_name
+    AZURE_SQL_DATABASE = azurerm_mssql_database.tycho-db.name
+    AZURE_SQL_PORT     = "1433"
 
     # pick passwordless on App Service
     AZURE_SQL_AUTHENTICATIONTYPE = "azure-active-directory-default"
@@ -763,7 +896,7 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
     }
   }
 
-  depends_on = [ azurerm_storage_blob.tycho_package ]
+  depends_on = [azurerm_storage_blob.tycho_package]
 }
 
 
@@ -834,7 +967,7 @@ resource "azurerm_linux_virtual_machine" "rocinante" {
 # TODO: Allow to define real secrets via the terraform.tfvars file.
 
 locals {
-aws_secrets = <<-SECRETS
+  aws_secrets     = <<-SECRETS
 [default]
 aws_access_key_id=ASIAIOSFODNN7EXAMPLE
 aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -845,7 +978,7 @@ aws_access_key_id=ASIAI44QH8DHBEXAMPLE
 aws_secret_access_key=je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY
 aws_session_token = fcZib3JpZ2luX2IQoJb3JpZ2luX2IQoJb3JpZ2luX2IQoJb3JpZ2luX2IQoJb3JpZVERYLONGSTRINGEXAMPLE
 SECRETS
-aws_secrets_b64 = base64encode(local.aws_secrets)
+  aws_secrets_b64 = base64encode(local.aws_secrets)
 }
 
 resource "azurerm_virtual_machine_extension" "rocinante_loot_provision" {
@@ -917,10 +1050,156 @@ resource "azurerm_linux_virtual_machine" "scopuli" {
   ]
 }
 
+## Create Donnager Windows VM
+resource "azurerm_windows_virtual_machine" "donnager" {
+  name                  = "Donnager"
+  location              = azurerm_resource_group.res-114.location
+  resource_group_name   = azurerm_resource_group.res-114.name
+  size                  = "Standard_B2s" # 2 vCPU, 4GB RAM
+  admin_username        = "yao"
+  admin_password        = var.config.donnager_admin_password
+  network_interface_ids = [azurerm_network_interface.donnager_nic.id]
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.jovian_access.id]
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "StandardSSD_LRS"
+  }
+
+  source_image_reference {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2022-Datacenter"
+    version   = "latest"
+  }
+
+  depends_on = [
+    azurerm_network_interface.donnager_nic,
+    azurerm_user_assigned_identity.jovian_access,
+  ]
+}
+
+### Store secrets on Donnager Windows VM
+locals {
+  donnager_secrets_ps1 = <<-POWERSHELL
+# Wait for VM to fully boot (fixes race condition)
+Start-Sleep -Seconds 120
+$ErrorActionPreference = 'Continue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# Azure NIC defaults to Public; use Private so firewall / discovery defaults match LAN (DomainAuthenticated only after AD join).
+Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -ne 'DomainAuthenticated' } | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue
+
+# SMB: NSG allows 445; Windows Firewall blocks SMB on Public profile by default.
+Get-Service -Name LanmanServer -ErrorAction SilentlyContinue | Set-Service -StartupType Automatic -ErrorAction SilentlyContinue
+Start-Service -Name LanmanServer -ErrorAction SilentlyContinue
+if (-not (Get-NetFirewallRule -DisplayName 'ExpanseLab-Smb445-In' -ErrorAction SilentlyContinue)) {
+  New-NetFirewallRule -DisplayName 'ExpanseLab-Smb445-In' -Direction Inbound -LocalPort 445 -Protocol TCP -Action Allow -Profile Any | Out-Null
+}
+$labSharePath = 'C:\LabShare'
+New-Item -ItemType Directory -Path $labSharePath -Force | Out-Null
+if (-not (Get-SmbShare -Name 'LabShare' -ErrorAction SilentlyContinue)) {
+  New-SmbShare -Name 'LabShare' -Path $labSharePath -FullAccess 'BUILTIN\Administrators' -Description 'Expanse lab' | Out-Null
+}
+
+$registryPath = 'HKLM:\SOFTWARE\Expanse'
+if (-not (Test-Path $registryPath)) { $null = New-Item -Path $registryPath -Force }
+Set-ItemProperty -Path $registryPath -Name 'SQLServer' -Value '${azurerm_mssql_server.tycho.fully_qualified_domain_name}' -Type String -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $registryPath -Name 'SQLDatabase' -Value '${azurerm_mssql_database.tycho-db.name}' -Type String -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $registryPath -Name 'SQLAdminUser' -Value '${var.config.tycho_sa_username}' -Type String -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $registryPath -Name 'SQLAdminPass' -Value '${var.config.tycho_sa_password}' -Type String -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $registryPath -Name 'KeyVaultName' -Value '${azurerm_key_vault.vault_ganymede.name}' -Type String -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $registryPath -Name 'DonnagerMIPrincipalID' -Value '${azurerm_user_assigned_identity.jovian_access.principal_id}' -Type String -ErrorAction SilentlyContinue
+$null = cmdkey /generic:tycho-sql-connection /user:'${var.config.tycho_sa_username}' /pass:'${var.config.tycho_sa_password}' 2>&1
+
+$storageAccount = '${azurerm_storage_account.storage_labpallas.name}'
+$shareName = '${azurerm_storage_share.credentials_share.name}'
+$containerName = '${azurerm_storage_container.pallas.name}'
+$filePath = 'credentials.json'
+$tempFile = "$env:TEMP\credentials.json"
+$sas = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${local.donnager_secrets_sas_b64}'))
+
+try {
+    # Blob download + file upload via account SAS (Terraform-generated; no SharedKey signing on VM)
+    $blobUrl = "https://$storageAccount.blob.core.windows.net/$containerName/$filePath" + $sas
+    Invoke-WebRequest -Uri $blobUrl -OutFile $tempFile -UseBasicParsing
+
+    $fileContent = [System.IO.File]::ReadAllBytes($tempFile)
+    $fileLength = $fileContent.Length
+    $fileBase = "https://$storageAccount.file.core.windows.net/$shareName/$filePath"
+    $fileCreateUrl = $fileBase + $sas
+    $filePutUrl = $fileBase + '?comp=range' + ($sas -replace '^\?','&')
+    $version = '2021-06-08'
+    $createHeaders = @{
+        'x-ms-content-length' = $fileLength
+        'x-ms-type' = 'file'
+        'x-ms-version' = $version
+    }
+    Invoke-WebRequest -Uri $fileCreateUrl -Method PUT -Headers $createHeaders -UseBasicParsing
+
+    $rangeEnd = [Math]::Max(0, $fileLength - 1)
+    $putHeaders = @{
+        'x-ms-range' = "bytes=0-$rangeEnd"
+        'x-ms-write' = 'update'
+        'x-ms-version' = $version
+        'Content-Type' = 'application/octet-stream'
+    }
+    Invoke-WebRequest -Uri $filePutUrl -Method PUT -Headers $putHeaders -Body $fileContent -UseBasicParsing
+} catch {
+    Write-Error "An error occurred: $_"
+    exit 1
+} finally {
+    if (Test-Path $tempFile) { Remove-Item $tempFile -Force }
+}
+exit 0
+POWERSHELL
+  donnager_secrets_b64 = base64encode(local.donnager_secrets_ps1)
+}
+
+resource "azurerm_virtual_machine_extension" "donnager_secrets_provision" {
+  name                 = "donnager_secrets_provision"
+  virtual_machine_id   = azurerm_windows_virtual_machine.donnager.id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    commandToExecute = "powershell.exe -ExecutionPolicy Bypass -Command \"$b64='${local.donnager_secrets_b64}';$bytes=[System.Convert]::FromBase64String($b64);$script=[System.Text.Encoding]::UTF8.GetString($bytes);$script|Out-File -FilePath C:\\Windows\\Temp\\donnager-secrets.ps1 -Encoding UTF8;& C:\\Windows\\Temp\\donnager-secrets.ps1\""
+  })
+
+  depends_on = [
+    azurerm_windows_virtual_machine.donnager,
+    azurerm_storage_account.storage_labpallas,
+    azurerm_storage_container.pallas,
+    azurerm_storage_blob.alex_credentials_json,
+    azurerm_storage_share.credentials_share,
+    azurerm_mssql_server.tycho,
+    azurerm_key_vault.vault_ganymede,
+    azurerm_role_assignment.donnager_storage_blob_reader,
+    azurerm_role_assignment.donnager_storage_file_contributor
+  ]
+}
+
+
+
 ## Create user assigned managed identity "keystothescopuli"
 resource "azurerm_user_assigned_identity" "keystothescopuli" {
   location            = azurerm_resource_group.res-114.location
   name                = "KeysToTheScopuli_${var.config.lab_uniq_id}"
+  resource_group_name = azurerm_resource_group.res-114.name
+  depends_on = [
+    azurerm_resource_group.res-114,
+  ]
+}
+
+## Create user assigned managed identity for Windows VM (Donnager)
+resource "azurerm_user_assigned_identity" "jovian_access" {
+  location            = azurerm_resource_group.res-114.location
+  name                = "JovianAccess_${var.config.lab_uniq_id}"
   resource_group_name = azurerm_resource_group.res-114.name
   depends_on = [
     azurerm_resource_group.res-114,
@@ -981,6 +1260,33 @@ resource "azurerm_network_interface_security_group_association" "res-10" {
   ]
 }
 
+## Create network interface for the Donnager Windows VM
+resource "azurerm_network_interface" "donnager_nic" {
+  location            = azurerm_resource_group.res-114.location
+  name                = "donnager-nic"
+  resource_group_name = azurerm_resource_group.res-114.name
+  ip_configuration {
+    name                          = "ipconfig1"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.donnager_ip.id
+    subnet_id                     = "/subscriptions/${var.config.subscription_id}/resourceGroups/${azurerm_resource_group.res-114.name}/providers/Microsoft.Network/virtualNetworks/Space-vnet/subnets/default"
+  }
+  depends_on = [
+    azurerm_public_ip.donnager_ip,
+    azurerm_subnet.res-18,
+  ]
+}
+
+## Assign the Donnager NIC to the NSG "Space-nsg"
+resource "azurerm_network_interface_security_group_association" "donnager_nsg" {
+  network_interface_id      = azurerm_network_interface.donnager_nic.id
+  network_security_group_id = "/subscriptions/${var.config.subscription_id}/resourceGroups/${azurerm_resource_group.res-114.name}/providers/Microsoft.Network/networkSecurityGroups/Space-nsg"
+  depends_on = [
+    azurerm_network_interface.donnager_nic,
+    azurerm_network_security_group.res-11,
+  ]
+}
+
 ## Create "space-nsg" NetworkSecurityGroup
 resource "azurerm_network_security_group" "res-11" {
   location            = azurerm_resource_group.res-114.location
@@ -997,10 +1303,27 @@ resource "azurerm_network_security_rule" "res-12" {
   destination_address_prefix  = "*"
   destination_port_range      = "*"
   direction                   = "Inbound"
-  name                        = "SSH"
+  name                        = "FullNetworkAccess"
   network_security_group_name = "Space-nsg"
   priority                    = 300
   protocol                    = "Tcp"
+  resource_group_name         = azurerm_resource_group.res-114.name
+  source_address_prefix       = var.config.client_ip
+  source_port_range           = "*"
+  depends_on = [
+    azurerm_network_security_group.res-11,
+  ]
+}
+
+resource "azurerm_network_security_rule" "res-12-udp" {
+  access                      = "Allow"
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  direction                   = "Inbound"
+  name                        = "FullNetworkAccessUdp"
+  network_security_group_name = "Space-nsg"
+  priority                    = 301
+  protocol                    = "Udp"
   resource_group_name         = azurerm_resource_group.res-114.name
   source_address_prefix       = var.config.client_ip
   source_port_range           = "*"
@@ -1029,6 +1352,18 @@ resource "azurerm_public_ip" "res-16" {
   resource_group_name = azurerm_resource_group.res-114.name
   sku                 = "Standard"
   zones               = ["1"]
+  depends_on = [
+    azurerm_resource_group.res-114,
+  ]
+}
+
+## Create public IP for the Donnager Windows VM
+resource "azurerm_public_ip" "donnager_ip" {
+  allocation_method   = "Static"
+  location            = azurerm_resource_group.res-114.location
+  name                = "Donnager-ip"
+  resource_group_name = azurerm_resource_group.res-114.name
+  sku                 = "Standard"
   depends_on = [
     azurerm_resource_group.res-114,
   ]
@@ -1197,17 +1532,17 @@ resource "azurerm_mssql_database" "tycho-db" {
   server_id = azurerm_mssql_server.tycho.id
 
   # Serverless GP: max 1 vCore, bill to zero when paused
-  sku_name                    = "GP_S_Gen5_1"    # GP = General Purpose, S = Serverless
-  min_capacity                = 1              # vCores while active (min)
-  auto_pause_delay_in_minutes = 60               # pause after 60 min idle
-  max_size_gb                 = 8               # keep storage small; you pay for the cap
+  sku_name                    = "GP_S_Gen5_1" # GP = General Purpose, S = Serverless
+  min_capacity                = 1             # vCores while active (min)
+  auto_pause_delay_in_minutes = 60            # pause after 60 min idle
+  max_size_gb                 = 8             # keep storage small; you pay for the cap
 
   # Turn off extras
   zone_redundant = false
   read_scale     = false
 
   short_term_retention_policy {
-    retention_days = 7                           # minimum, lowers backup storage
+    retention_days = 7 # minimum, lowers backup storage
   }
 
   depends_on = [
@@ -1216,7 +1551,7 @@ resource "azurerm_mssql_database" "tycho-db" {
   ]
 
   lifecycle {
-    prevent_destroy = false                       # avoid accidental drops
+    prevent_destroy = false # avoid accidental drops
   }
 }
 
@@ -1309,7 +1644,7 @@ resource "azurerm_user_assigned_identity" "tycho_directory_reader" {
 # Wait for the managed identity's service principal to propagate in Azure AD before assigning directory role
 resource "time_sleep" "tycho_directory_reader_propagation" {
   create_duration = "60s"
-  depends_on     = [azurerm_user_assigned_identity.tycho_directory_reader]
+  depends_on      = [azurerm_user_assigned_identity.tycho_directory_reader]
 }
 
 resource "azuread_directory_role" "directory_readers" {
@@ -1331,10 +1666,10 @@ resource "azuread_directory_role_assignment" "tycho_directory_reader_assignment"
 # Chrisjen DB Manupulation: 
 # Create locals for Chrisjen auth data:
 locals {
-  chrisjen_app_id          = azuread_application.app["Chrisjen"].client_id
-  chrisjen_app_secret      = nonsensitive(azuread_application_password.pwd["Chrisjen"].value)
+  chrisjen_app_id     = azuread_application.app["Chrisjen"].client_id
+  chrisjen_app_secret = nonsensitive(azuread_application_password.pwd["Chrisjen"].value)
   # Escape single quotes in case the secret contains any
-  chrisjen_app_secret_sql  = replace(local.chrisjen_app_secret, "'", "''")
+  chrisjen_app_secret_sql = replace(local.chrisjen_app_secret, "'", "''")
 
   chrisjen_sql_string = format(
     "UPDATE dbo.espionage_credentials SET app_id = '%s', secret = '%s', tenant_id = '%s' WHERE subject_name = N'%s';",
