@@ -1,19 +1,20 @@
 variable "config" {
   description = "Configuration values including credentials, keys, and metadata."
   type = object({
-    client_ip               = string
-    subscription_id         = string
-    rocinante_ssh_key       = string
-    scopuli_ssh_key         = string
-    region                  = string
-    resource_grp_name       = string
-    scopuli_ssh_user        = string
-    tycho_sa_username       = string
-    tycho_sa_password       = string
-    donnager_admin_password = string
-    lab_uniq_id             = string
-    end_date                = string
-    verbose                 = bool
+    client_ip                  = string
+    subscription_id            = string
+    rocinante_ssh_key          = string
+    scopuli_ssh_key            = string
+    region                     = string
+    resource_grp_name          = string
+    scopuli_ssh_user           = string
+    tycho_sa_username          = string
+    tycho_sa_password          = string
+    donnager_admin_password    = string
+    lab_uniq_id                = string
+    end_date                   = string
+    verbose                    = bool
+    heartbeat_interval_minutes = number
   })
 }
 # Create random integer for unique names (used for Ganymede, tycho server, etc.)
@@ -1693,7 +1694,7 @@ resource "azurerm_virtual_machine_extension" "scopuli_sql_provision" {
 
   settings = <<SETTINGS
 {
-  "commandToExecute": "bash -c 'export DEBIAN_FRONTEND=\"noninteractive\" && apt-get update && apt-get install -y wget curl apt-transport-https gnupg jq && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && apt-get update && apt-get install sqlcmd && curl \"https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/blob_resources/expanse_init.sql\" -o /tmp/expanse_init.sql && echo \"CREATE USER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}] FROM EXTERNAL PROVIDER; ALTER ROLE db_owner ADD MEMBER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}];\" > /tmp/grant_mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryServicePrincipal -U ${azuread_application.tycho_sa_app.client_id} -P ${azuread_service_principal_password.tycho_sa_sp_password.value} -i /tmp/grant_mi.sql && curl -H \"Metadata:true\" \"http://169.254.169.254/metadata/identity/oauth2/token?resource=https://database.windows.net/&api-version=2018-02-01\" | jq -r .access_token > access.tkn && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/expanse_init.sql -P access.tkn && echo \"CREATE USER [${azurerm_linux_web_app.tycho-terminal.name}] FROM EXTERNAL PROVIDER;; ALTER ROLE db_datareader ADD MEMBER [${azurerm_linux_web_app.tycho-terminal.name}]; ALTER ROLE db_datawriter ADD MEMBER [${azurerm_linux_web_app.tycho-terminal.name}];\" > /tmp/grant_tycho-terminal-mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/grant_tycho-terminal-mi.sql -P access.tkn && echo \"${local.chrisjen_sql_b64}\" | base64 -d > /tmp/insert-SG-credentials.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/insert-SG-credentials.sql -P access.tkn'"
+  "commandToExecute": "bash -c 'export DEBIAN_FRONTEND=\"noninteractive\" && apt-get update && apt-get install -y wget curl apt-transport-https gnupg jq && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && apt-get update && apt-get install sqlcmd && curl \"https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/blob_resources/expanse_init.sql\" -o /tmp/expanse_init.sql && echo \"CREATE USER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}] FROM EXTERNAL PROVIDER; ALTER ROLE db_owner ADD MEMBER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}];\" > /tmp/grant_mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryServicePrincipal -U ${azuread_application.tycho_sa_app.client_id} -P ${azuread_service_principal_password.tycho_sa_sp_password.value} -i /tmp/grant_mi.sql && curl -H \"Metadata:true\" \"http://169.254.169.254/metadata/identity/oauth2/token?resource=https://database.windows.net/&api-version=2018-02-01\" | jq -r .access_token > access.tkn && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/expanse_init.sql -P access.tkn && echo \"CREATE USER [${azurerm_linux_web_app.tycho-terminal.name}] FROM EXTERNAL PROVIDER; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.ships TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.crew_manifest TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.espionage_credentials TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.protomolecule_incidents TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT VIEW DEFINITION ON OBJECT::dbo.protomolecule_samples TO [${azurerm_linux_web_app.tycho-terminal.name}];\" > /tmp/grant_tycho-terminal-mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/grant_tycho-terminal-mi.sql -P access.tkn && echo \"${local.chrisjen_sql_b64}\" | base64 -d > /tmp/insert-SG-credentials.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/insert-SG-credentials.sql -P access.tkn'"
 }
 SETTINGS
 

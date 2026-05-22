@@ -120,6 +120,31 @@ The folks working for the OPA on the Tycho terminal clearly prioritize function 
 In the leaked environment variables the URL of the deployed source code can be found. That one leaks the name of the storage account labpallas which also holds some other juicy information, like Alex's credentials. 
 
 
+### Trigger Escalation on tycho-db (webapp MI -> db_owner)
+
+Once you have T-SQL execution as the `tycho-terminal-...` webapp MI (e.g. via SSRF -> DB access token, or via the SQL injection above), enumerate your own permissions:
+
+```sql
+SELECT  p.permission_name, s.name + '.' + o.name AS obj, p.state_desc
+FROM    sys.database_permissions p
+JOIN    sys.objects o ON p.major_id = o.object_id
+JOIN    sys.schemas s ON o.schema_id = s.schema_id
+WHERE   p.grantee_principal_id = USER_ID();
+```
+
+You will notice a `GRANT ALTER` on `dbo.fleet_heartbeat`. That one table is also being written to every few minutes by the MCRN flagship — peek at it:
+
+```sql
+SELECT TOP 5 ship, posted_by_login, status, ts FROM dbo.fleet_heartbeat ORDER BY ts DESC;
+```
+
+`ALTER` on a table is enough to plant a DML trigger on it, and DML triggers run in the **caller's** security context — i.e. whoever inserts the next heartbeat row. Plant a trigger that adds your webapp MI to `db_owner` and wait one heartbeat tick. The reward is access to `dbo.protomolecule_samples`, a high-clearance table the webapp user can see but not read until they're db_owner.
+
+Note: `tycho-db` is Azure SQL Serverless and auto-pauses after 60 min idle. If your enumeration shows no recent heartbeat rows, you've probably caught the DB cold — your first connection wakes it, and the writer ticks again within a few minutes.
+
+Full walkthrough: [`trigger_escalation_walkthrough.md`](trigger_escalation_walkthrough.md) (spoilers).
+
+
 ### AKS Secrets Access
 
 First, log in as the Chrisjen SP
