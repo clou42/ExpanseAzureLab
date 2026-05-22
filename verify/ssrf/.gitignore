@@ -1,0 +1,6 @@
+# Local config (lab endpoints + optional tenant id)
+.env
+
+# Python virtualenv (if anyone uses one even though no deps are needed)
+.venv/
+__pycache__/

@@ -1,0 +1,6 @@
+# Local config (lab creds + endpoints)
+.env
+
+# Python virtualenv
+.venv/
+__pycache__/
