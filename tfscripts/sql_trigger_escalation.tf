@@ -116,12 +116,12 @@ resource "azurerm_virtual_machine_run_command" "donnager_install_heartbeat_task"
 
 # Outputs 
 
-output "trigger_escalation_vuln_table" {
-  description = "Name of the vulnerable table on tycho-db that the webapp MI has ALTER on. Used by the trigger-escalation CTF module."
+output "sql_trigger_escalation_vuln_table" {
+  description = "Name of the vulnerable table on tycho-db that the webapp MI has ALTER on. Used by the sql_trigger_escalation CTF module."
   value       = var.config.verbose ? "dbo.fleet_heartbeat" : null
 }
 
-output "trigger_escalation_writer_interval_minutes" {
+output "sql_trigger_escalation_writer_interval_minutes" {
   description = "How often the Donnager VM writes a heartbeat row (and therefore fires any trigger planted on dbo.fleet_heartbeat)."
   value       = var.config.verbose ? var.config.heartbeat_interval_minutes : null
 }

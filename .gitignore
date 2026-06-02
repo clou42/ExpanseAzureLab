@@ -6,3 +6,7 @@
 .terraform/
 terraform.tfvars
 users.csv
+
+# Don't spoil all the fun ;)
+verify/
+attacks/*_walkthrough.md

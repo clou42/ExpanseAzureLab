@@ -232,3 +232,33 @@ INSERT INTO dbo.protomolecule_samples (designation, storage_facility, clearance_
    N'Sample taken from Ilus surface entity. Naomi flagged for review. Holden insists on retention. Magnetic suspension + redundant kill-switch.'),
 (N'PROTO-005-MEDINA',   N'Medina Station - Inaros Vault',     N'BLACK - FREE NAVY',        N'Unknown',
    N'MCRN intel suspects Free Navy weaponization. Inaros has refused all inspection requests. Investigate Filip''s logs.');
+
+CREATE TABLE dbo.maintenance_jobs (
+    job_id        INT IDENTITY(1,1) PRIMARY KEY,
+    job_name      NVARCHAR(100)  NOT NULL,
+    job_type      NVARCHAR(50)   NOT NULL,
+    target        NVARCHAR(400)  NULL,
+    schedule_cron NVARCHAR(50)   NULL,
+    run_as        NVARCHAR(200)  NULL,
+    last_status   NVARCHAR(50)   NULL,
+    last_run      DATETIME2(3)   NULL,
+    notes         NVARCHAR(1000) NULL
+);
+
+INSERT INTO dbo.maintenance_jobs (job_name, job_type, target, schedule_cron, run_as, last_status, last_run, notes) VALUES
+
+(N'idx-maint-nightly',         N'IndexMaintenance', NULL,
+ N'0 1 * * *', N'tycho-db automation', N'Succeeded', DATEADD(day,-1,SYSUTCDATETIME()),
+ N'Rebuild/reorg fragmented indexes on crew_manifest and ships.'),
+
+(N'stats-refresh-weekly',      N'StatsUpdate',      NULL,
+ N'0 3 * * 0', N'tycho-db automation', N'Succeeded', DATEADD(day,-2,SYSUTCDATETIME()),
+ N'Full-scan statistics refresh across user tables.'),
+
+-- Breadcrumb: nightly export ships bacpacs off-box to the Ceres backups bucket.
+-- The host below is a placeholder; the Scopuli deployer patches in the real
+-- ceres<suffix> account name after this script runs.
+(N'tycho-db-nightly-exporter', N'BacpacExport',
+ N'https://ceres-PLACEHOLDER.blob.core.windows.net/db-backups',
+ N'0 2 * * *', N'platform-data-eng exporter SP', N'Succeeded', DATEADD(hour,-7,SYSUTCDATETIME()),
+ N'Nightly bacpac + bulk-csv export to the Ceres archives account (private container db-backups). Runner config and exporter SP creds are kept in the automation/ prefix inside that container.');
