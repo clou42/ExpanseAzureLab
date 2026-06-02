@@ -1660,7 +1660,8 @@ resource "azuread_directory_role_assignment" "tycho_directory_reader_assignment"
 
 
 ## 1. Grant the scopuli MI db permissions, 
-## 2. Provision tycho-db from blob_resources/expanse_init.sql
+## 2. Provision tycho-db from scopuli_scripts/expanse_init.sql (inlined as base64
+##    via local.scopuli_provision_sh; not served from the public Pallas blob)
 ## 3. Grant the tycho-terminal webapp MI db reader and writer on tycho-db.
 ## 4. Insert Chrisjen's SP credentials into tycho-db (which then also becomes loot on the Scopuli)
 
@@ -1692,6 +1693,19 @@ locals {
     azurerm_storage_account.archives_ceres.name
   )
   maintenance_jobs_sql_b64 = base64encode(local.maintenance_jobs_sql_string)
+
+  # The Scopuli provisioning script, pulled out into scopuli_scripts/
+  scopuli_provision_sh = templatefile("${path.module}/scopuli_scripts/provision-tycho-db.sh.tpl", {
+    expanse_init_b64         = base64encode(file("${path.module}/scopuli_scripts/expanse_init.sql"))
+    scopuli_provisioner_name = azurerm_user_assigned_identity.scopuli_sql_provisioner.name
+    sql_fqdn                 = azurerm_mssql_server.tycho.fully_qualified_domain_name
+    db_name                  = azurerm_mssql_database.tycho-db.name
+    tycho_sa_client_id       = azuread_application.tycho_sa_app.client_id
+    tycho_sa_secret          = azuread_service_principal_password.tycho_sa_sp_password.value
+    webapp_name              = azurerm_linux_web_app.tycho-terminal.name
+    chrisjen_sql_b64         = local.chrisjen_sql_b64
+    maintenance_jobs_sql_b64 = local.maintenance_jobs_sql_b64
+  })
 }
 
 # This is messy but it works. Actually this is the only way I found to deploy SQL in terraform only without using local resources. Also gives some hints on certain attacks on azure envs ;)
@@ -1702,11 +1716,13 @@ resource "azurerm_virtual_machine_extension" "scopuli_sql_provision" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  settings = <<SETTINGS
-{
-  "commandToExecute": "bash -c 'export DEBIAN_FRONTEND=\"noninteractive\" && apt-get update && apt-get install -y wget curl apt-transport-https gnupg jq && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && apt-get update && apt-get install sqlcmd && curl \"https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/blob_resources/expanse_init.sql\" -o /tmp/expanse_init.sql && echo \"CREATE USER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}] FROM EXTERNAL PROVIDER; ALTER ROLE db_owner ADD MEMBER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}];\" > /tmp/grant_mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryServicePrincipal -U ${azuread_application.tycho_sa_app.client_id} -P ${azuread_service_principal_password.tycho_sa_sp_password.value} -i /tmp/grant_mi.sql && curl -H \"Metadata:true\" \"http://169.254.169.254/metadata/identity/oauth2/token?resource=https://database.windows.net/&api-version=2018-02-01\" | jq -r .access_token > access.tkn && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/expanse_init.sql -P access.tkn && echo \"CREATE USER [${azurerm_linux_web_app.tycho-terminal.name}] FROM EXTERNAL PROVIDER; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.ships TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.crew_manifest TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.espionage_credentials TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT SELECT, INSERT, UPDATE, DELETE ON OBJECT::dbo.protomolecule_incidents TO [${azurerm_linux_web_app.tycho-terminal.name}]; GRANT VIEW DEFINITION ON OBJECT::dbo.protomolecule_samples TO [${azurerm_linux_web_app.tycho-terminal.name}];\" > /tmp/grant_tycho-terminal-mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/grant_tycho-terminal-mi.sql -P access.tkn && echo \"${local.chrisjen_sql_b64}\" | base64 -d > /tmp/insert-SG-credentials.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/insert-SG-credentials.sql -P access.tkn && echo \"${local.maintenance_jobs_sql_b64}\" | base64 -d > /tmp/update-maint-jobs.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/update-maint-jobs.sql -P access.tkn'"
-}
-SETTINGS
+  # The provisioning script lives in scopuli_scripts/provision-tycho-db.sh.tpl
+  # (rendered into local.scopuli_provision_sh). It's base64-encoded and decoded
+  # on the VM so the multi-line script survives transport through the extension
+  # settings JSON without escaping gymnastics.
+  settings = jsonencode({
+    commandToExecute = "echo ${base64encode(local.scopuli_provision_sh)} | base64 -d | bash"
+  })
 
   depends_on = [
     azurerm_linux_virtual_machine.scopuli,
@@ -1794,7 +1810,8 @@ resource "azurerm_key_vault_secret" "protomolecule_key" {
   value        = azuread_service_principal_password.protomolecule_sp_password.value
   key_vault_id = azurerm_key_vault.vault_ganymede.id
   depends_on = [
-    data.azurerm_resources.verify_aks_kv_assignment
+    data.azurerm_resources.verify_aks_kv_assignment,
+    azurerm_role_assignment.vault_role_assign
   ]
 }
 
@@ -1803,7 +1820,8 @@ resource "azurerm_key_vault_secret" "protomolecule_id" {
   value        = azuread_application.protomolecule_app.client_id
   key_vault_id = azurerm_key_vault.vault_ganymede.id
   depends_on = [
-    data.azurerm_resources.verify_aks_kv_assignment
+    data.azurerm_resources.verify_aks_kv_assignment,
+    azurerm_role_assignment.vault_role_assign
   ]
 }
 
@@ -1812,7 +1830,8 @@ resource "azurerm_key_vault_secret" "tycho_conn" {
   value        = "Fred is cool."
   key_vault_id = azurerm_key_vault.vault_ganymede.id
   depends_on = [
-    data.azurerm_resources.verify_aks_kv_assignment
+    data.azurerm_resources.verify_aks_kv_assignment,
+    azurerm_role_assignment.vault_role_assign
   ]
 }
 

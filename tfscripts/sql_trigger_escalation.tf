@@ -1,24 +1,20 @@
-###############################################################################
 # SQL Trigger Escalation module
 #
 # Demonstrates SQL Server / Azure SQL DML triggers executing in the security
 # context of the user that CAUSES the trigger to fire (not the user that
 # created it)
 #
-# The vulnerable table dbo.fleet_heartbeat is created by blob_resources/
+# The vulnerable table dbo.fleet_heartbeat is created by scopuli_scripts/
 # expanse_init.sql (which is provisioned by the existing Scopuli SQL
 # provisioning extension). This file only:
 #   1. layers the "misconfig" grants/denies onto the webapp MI after it has
 #      been created by that same extension, and
 #   2. installs a recurring writer on the Donnager VM.
-###############################################################################
 
-###############################################################################
 # 1. Grants on the webapp MI (the "low-priv attacker").
 #
 # Runs on Scopuli (which already has db_owner on tycho-db via its MI), after
 # scopuli_sql_provision has finished creating the [tycho-terminal-...] user.
-###############################################################################
 
 locals {
   trigger_escalation_grants_sql = <<-SQL

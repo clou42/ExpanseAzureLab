@@ -1,4 +1,3 @@
-###############################################################################
 # SQL MI Storage Pivot module
 #
 # Once the player has db_owner on tycho-db (via the sql_trigger_escalation
@@ -18,14 +17,13 @@
 # player's perspective the only reachable path is (a) be db_owner and
 # (b) CREATE DATABASE SCOPED CREDENTIAL with IDENTITY = 'Managed Identity',
 # so tycho-db assumes its MI on the outbound REST call.
-###############################################################################
 
-###############################################################################
+
 # 1. Private storage account ("Ceres") - separate from the public-blob Pallas
 #    account so the realistic misconfig (a backups bucket that's correctly
 #    locked down at the data plane but over-permissioned at the IAM plane)
 #    is not muddied by Pallas' public-blob settings.
-###############################################################################
+
 resource "azurerm_storage_account" "archives_ceres" {
   name                = "ceres${random_string.storage_suffix.result}"
   resource_group_name = azurerm_resource_group.res-114.name
