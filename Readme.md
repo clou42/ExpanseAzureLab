@@ -54,26 +54,7 @@ Create a copy of the `users.csv.example` file with the name `users.csv`. This wi
 Set passwords for your users. Be mindful of password complexity requirements in your tenant.
 If needed you can also configure additional users in the `users.csv` file. The `job_title` field determines the permissions of a user. Role bindings and custom roles are defined in the `main.tf` file if you want to alter them.
 
-The jobs currently give the following permissions:
-
-**Crew:**
-`Virtual Machine User Login` on the `Rocinante` VM.
-`Key Vault Administrator` on the `Ganymede` Key Vault.
-
-**Pilot:**
-The custom `VM_Rocinante_RunCommand_ExtensionsWrite` role which yields the following permissions:
-```
-"Microsoft.Compute/virtualMachines/runCommand/*",
-"Microsoft.Compute/virtualMachines/extensions/*",
-"Microsoft.Compute/virtualMachines/read"
-```
-on the `Rocinante` VM.
-
-**Captain:**
-`Virtual Machine Contributor` on the `Rocinante` VM.
-
-**Secretary General:**
-`Cluster Admin` on "Earthfleet" AKS cluster and `Microsoft.ContainerService/managedClusters/*` via the `aks_sg_admin` custom role.
+The exact role-to-job mapping is a spoiler, so it is documented in [`attacks/permissions.md`](attacks/permissions.md) rather than here.
 
 ## Deployment
 
@@ -114,6 +95,9 @@ Make sure to accept the changes (if you approve) by typing `yes` when Terraform 
 After successfully creating the lab environment, the `tycho_terminal_webapp_fqdn` is printed. This is the starting point for a CTF you can try.
 If you instead want a VERY verbose output for direct access to all users and resources, set the `verbose` flag in the `terraform.tfvars` file to true:
 ```
+Donnager_MI_principal_id = "12345678-1234-1234-1234-123456781234"
+Donnager_admin_user = "yao"
+Donnager_public_IP = "198.51.100.3"
 KeysToTheScopuli_MI_principal_id = "12345678-1234-1234-1234-123456781234"
 Rocinante_admin_user = "kelly"
 Rocinante_public_IP = "198.51.100.1"
@@ -188,13 +172,7 @@ whitelisted_client_ip = "The client_ip [your_ip] is whitelisted in the DB and VM
 ```
 The public IPs of the VMs allow for SSH connections using the configured SSH key and the user from the output.
 
-Additionally, a highly privileged service principal (`Contributor` on the resource group) is created, which can be used as an additional entry point. The data needed is printed as `priv_sp_proto_client_id`, `priv_sp_proto_client_secret`, and `tenant_id`. 
-
-An additional SP is created as an administrator of the `Tycho` database. Use `tycho_db_sa_sp_client_id` and `tycho_db_sp_client_secret` along with the `tenant_id` again.
-
-The users `Alex` and `Jim` have code execution privileges on the `Rocinante` VM and can therefore also be used as a direct entry.
-
-For manual testing of managed identity scenarios, the principal ID of the `KeysToTheScopuli` user-assigned managed identity is provided. This identity is attached to the `Rocinante` VM and allows for `RunCommand` and `Extensions/Write` access on the `Scopuli` VM.
+The verbose output also surfaces several service principals and managed identities (a privileged SP, the Tycho DB admin SP, code-execution users, and the VM managed identities) for direct access. Their exact privileges and intended access paths are spoilers - see [`attacks/permissions.md`](attacks/permissions.md).
 
 Now the lab should be correctly configured in you Azure subscription inside a new resource group `lab_uniq_id-ExpanseAzureSecLab` (depending on your configuration).
 

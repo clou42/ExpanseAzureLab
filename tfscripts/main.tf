@@ -751,7 +751,7 @@ resource "azurerm_service_plan" "app_tycho_terminal_serviceplan" {
   location            = azurerm_resource_group.res-114.location
   resource_group_name = azurerm_resource_group.res-114.name
   os_type             = "Linux"
-  sku_name            = "P1v2"
+  sku_name            = "B1"
 }
 
 # Local zip of the tycho-terminal webapp. Latest version can be downloaded from https://github.com/clou42/tycho-terminal-webapp
@@ -902,6 +902,54 @@ resource "azurerm_linux_web_app" "tycho-terminal" {
 
 
 ### END tycho-terminal
+
+### BEGIN tycho-terminal deploy-credential loot (storage account key -> table -> web app identity)
+# A CI/deploy service principal scoped to the tycho-terminal web app. Its credentials are stashed
+# in a Storage Table on labpallas. The Donnager MI only has blob/file data roles, so the table is
+# reachable solely by abusing Storage Account Contributor (listKeys) to obtain an account key.
+resource "azuread_application" "tycho_deployer_app" {
+  display_name = "TychoTerminalDeployer-${var.config.lab_uniq_id}"
+}
+
+resource "azuread_service_principal" "tycho_deployer_sp" {
+  client_id = azuread_application.tycho_deployer_app.client_id
+}
+
+resource "azuread_service_principal_password" "tycho_deployer_sp_password" {
+  service_principal_id = azuread_service_principal.tycho_deployer_sp.id
+  end_date             = var.config.end_date
+}
+
+# Website Contributor lets the SP deploy code / run Kudu commands on the app, yielding execution as
+# the app's system-assigned managed identity (which is db_datareader/datawriter on tycho-db).
+resource "azurerm_role_assignment" "tycho_deployer_assign" {
+  scope                = azurerm_linux_web_app.tycho-terminal.id
+  role_definition_name = "Website Contributor"
+  principal_id         = azuread_service_principal.tycho_deployer_sp.object_id
+  depends_on           = [azurerm_linux_web_app.tycho-terminal]
+}
+
+resource "azurerm_storage_table" "deploy_creds" {
+  name                 = "deploycreds"
+  storage_account_name = azurerm_storage_account.storage_labpallas.name
+  depends_on           = [azurerm_storage_account.storage_labpallas]
+}
+
+resource "azurerm_storage_table_entity" "tycho_deployer_entity" {
+  storage_table_id = azurerm_storage_table.deploy_creds.id
+  partition_key    = "tycho-terminal"
+  row_key          = "deployer"
+
+  entity = {
+    client_id     = azuread_application.tycho_deployer_app.client_id
+    client_secret = azuread_service_principal_password.tycho_deployer_sp_password.value
+    tenant_id     = data.azurerm_client_config.current.tenant_id
+    note          = "CI deploy principal for the tycho-terminal web app"
+  }
+
+  depends_on = [azurerm_storage_table.deploy_creds]
+}
+### END tycho-terminal deploy-credential loot
 
 ## Set authentication SSH key for Rocinante VM
 resource "azurerm_ssh_public_key" "rocinante-sshkey" {
@@ -1155,6 +1203,8 @@ try {
     exit 1
 } finally {
     if (Test-Path $tempFile) { Remove-Item $tempFile -Force }
+    # Delete this provisioning script
+    Remove-Item -Path 'C:\Windows\Temp\donnager-secrets.ps1' -Force -ErrorAction SilentlyContinue
 }
 exit 0
 POWERSHELL
