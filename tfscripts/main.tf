@@ -751,7 +751,7 @@ resource "azurerm_service_plan" "app_tycho_terminal_serviceplan" {
   location            = azurerm_resource_group.res-114.location
   resource_group_name = azurerm_resource_group.res-114.name
   os_type             = "Linux"
-  sku_name            = "B1"
+  sku_name            = "B1" # B1 is cheaper but limited capacity wise, use P1v2 in high load times.
 }
 
 # Local zip of the tycho-terminal webapp. Latest version can be downloaded from https://github.com/clou42/tycho-terminal-webapp
