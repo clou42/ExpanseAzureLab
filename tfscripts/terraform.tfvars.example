@@ -26,4 +26,6 @@ config = {
   end_date = "2025-12-27T13:37:42Z"
   # This controls whether all secrets etc. are printed (for testing) or if only the tycho-terminal webapp fqdn is printed (for ctf).
   verbose = false
+  # How often (minutes) exploit trigger jobs run. Range 1-60. These incurr small cost.
+  heartbeat_interval_minutes = 5
 }

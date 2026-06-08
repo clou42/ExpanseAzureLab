@@ -148,6 +148,40 @@ output "file_share_unc_path" {
   description = "UNC path to access the file share (requires storage account key or Azure AD authentication)"
   value       = var.config.verbose ? "\\\\${azurerm_storage_account.storage_labpallas.name}.file.core.windows.net\\${azurerm_storage_share.credentials_share.name}" : null
 }
+
+# -------------------------
+# SQL MI Storage Pivot module
+# -------------------------
+output "sql_mi_pivot_storage_account_name" {
+  description = "Private storage account holding the db-backups container the Tycho MI can read. Used by the sql_mi_pivot verify chain."
+  value       = var.config.verbose ? azurerm_storage_account.archives_ceres.name : null
+}
+
+output "sql_mi_pivot_storage_account_blob_endpoint" {
+  description = "Blob endpoint base URL for the Ceres archives account. The sp_invoke_external_rest_endpoint calls target this host."
+  value       = var.config.verbose ? azurerm_storage_account.archives_ceres.primary_blob_endpoint : null
+}
+
+output "sql_mi_pivot_container_name" {
+  description = "Private container on the Ceres account that the Tycho MI has Storage Blob Data Reader on."
+  value       = var.config.verbose ? azurerm_storage_container.db_backups.name : null
+}
+
+output "sql_mi_pivot_blob_path" {
+  description = "Path (relative to the container) of the target blob the verify chain reads via sp_invoke_external_rest_endpoint."
+  value       = var.config.verbose ? azurerm_storage_blob.loot_runner_json.name : null
+}
+
+output "sql_mi_pivot_tycho_mi_umi_name" {
+  description = "Name of the user-assigned managed identity attached to the Tycho SQL server. This is the MI the database-scoped credential resolves to when IDENTITY = 'Managed Identity'."
+  value       = var.config.verbose ? azurerm_user_assigned_identity.tycho_directory_reader.name : null
+}
+
+output "sql_mi_pivot_tycho_mi_umi_principal_id" {
+  description = "AAD object ID of the Tycho SQL server's UMI. Useful for the verify chain to assert the Storage Blob Data Reader role assignment is bound to this principal."
+  value       = var.config.verbose ? azurerm_user_assigned_identity.tycho_directory_reader.principal_id : null
+}
+
 # -------------------------
 # Optional debug outputs
 # -------------------------

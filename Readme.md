@@ -3,8 +3,8 @@
 This lab has been built for testing, learning, and teaching different attack paths and security "flaws" in Azure. Deploy it in your own tenant to explore Azure security in a controlled environment.
 
 It is intended to be rolled out in your own Azure tenant. You need fairly high privileges to roll this lab out:
-1. Contributor on the subscription you want to create the resources in.
-2. User Admin or something similar on tenant level, since we create a lot of Users/SPs
+1. Owner on the subscription you want to create the resources in.
+2. Privileged Role Admin or something similar on tenant level, since we create a lot of Users/SPs, one of them getting "Directory Reader" access.
 
 The Terraform script will create several resources in the configured tenant and subscription.
 All custom roles and permissions are only scoped to the newly created resource groups, but keep in mind that Azure Users tend to be able to read the full tenant level user database. It is therefore advised to deploy the lab in a test tenant only, never on any productive tenant. 

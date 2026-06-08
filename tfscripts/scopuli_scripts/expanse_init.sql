@@ -183,3 +183,82 @@ CREATE INDEX IX_ships_registry ON dbo.ships(registry);
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_crew_manifest_ship' AND object_id = OBJECT_ID('dbo.crew_manifest'))
   CREATE INDEX IX_crew_manifest_ship ON dbo.crew_manifest(ship);
+
+-- MCRN Fleet Heartbeat
+-- The Donnager (MCRN flagship) posts a periodic status ping into this table
+-- using the Tycho DB admin login. The audit team granted ALTER on this object
+-- to a downstream service account so it could "tune indexes". That single grant
+-- is enough to let that account plant a DML trigger that runs in the admin's
+-- security context on every heartbeat.
+CREATE TABLE dbo.fleet_heartbeat (
+    id              INT IDENTITY(1,1) PRIMARY KEY,
+    ship            NVARCHAR(50)   NOT NULL,
+    posted_by_login SYSNAME        NOT NULL CONSTRAINT DF_fleet_heartbeat_login DEFAULT (ORIGINAL_LOGIN()),
+    status          NVARCHAR(50)   NOT NULL,
+    note            NVARCHAR(255)  NULL,
+    ts              DATETIME2(3)   NOT NULL CONSTRAINT DF_fleet_heartbeat_ts DEFAULT (SYSUTCDATETIME())
+);
+
+CREATE INDEX IX_fleet_heartbeat_ts ON dbo.fleet_heartbeat(ts DESC);
+-- No seed rows: the Donnager scheduled task fires an immediate first
+-- heartbeat right after install, so the table is populated within ~15s
+-- of deploy. Seeding here would create rows whose posted_by_login is
+-- the Scopuli SQL provisioner MI (whoever ran this script), which
+-- would muddy the trigger-escalation discovery clue.
+
+-- Loot: classified protomolecule sample registry. The webapp MI is
+-- intentionally NOT granted any access to this table; only db_owner
+-- can read it (via the role's implicit access). It exists so that
+-- escalating to db_owner via the trigger-context trick yields a
+-- concrete reward beyond the role badge itself.
+CREATE TABLE dbo.protomolecule_samples (
+    sample_id        INT IDENTITY(1,1) PRIMARY KEY,
+    designation      NVARCHAR(50)   NOT NULL,
+    storage_facility NVARCHAR(120)  NOT NULL,
+    clearance_level  NVARCHAR(50)   NOT NULL,
+    status           NVARCHAR(50)   NOT NULL,
+    handler_notes    NVARCHAR(MAX)  NULL,
+    last_audit       DATETIME2(3)   NOT NULL CONSTRAINT DF_protomolecule_samples_last_audit DEFAULT (SYSUTCDATETIME())
+);
+
+INSERT INTO dbo.protomolecule_samples (designation, storage_facility, clearance_level, status, handler_notes) VALUES
+(N'PROTO-001-EROS',     N'Phoebe Black Site - Vault 7',       N'BLACK - TYCHO COUNCIL',    N'Contained',
+   N'Recovered from Eros approach 2089-04. EM cage Level 4 required. Witness of record: Cortazar. Do not expose to organic matter.'),
+(N'PROTO-002-VENUS',    N'Behemoth Cargo Bay 3',              N'BLACK - OPA INNER CIRCLE', N'Lost',
+   N'Sample escaped containment during transport from Venus orbit 2090-06. Behemoth on lockdown. Avasarala unaware. Recovery team: dispatched.'),
+(N'PROTO-003-GANYMEDE', N'Tycho Station - Refinery Vault A',  N'BLACK - TYCHO COUNCIL',    N'Sealed',
+   N'Recovered from Strickland blacksite on Ganymede. Mars believes destroyed. Do NOT disclose to Drummer.'),
+(N'PROTO-004-ILUS',     N'Rocinante Lab Module 2',            N'BLACK - HOLDEN ONLY',      N'Active',
+   N'Sample taken from Ilus surface entity. Naomi flagged for review. Holden insists on retention. Magnetic suspension + redundant kill-switch.'),
+(N'PROTO-005-MEDINA',   N'Medina Station - Inaros Vault',     N'BLACK - FREE NAVY',        N'Unknown',
+   N'MCRN intel suspects Free Navy weaponization. Inaros has refused all inspection requests. Investigate Filip''s logs.');
+
+CREATE TABLE dbo.maintenance_jobs (
+    job_id        INT IDENTITY(1,1) PRIMARY KEY,
+    job_name      NVARCHAR(100)  NOT NULL,
+    job_type      NVARCHAR(50)   NOT NULL,
+    target        NVARCHAR(400)  NULL,
+    schedule_cron NVARCHAR(50)   NULL,
+    run_as        NVARCHAR(200)  NULL,
+    last_status   NVARCHAR(50)   NULL,
+    last_run      DATETIME2(3)   NULL,
+    notes         NVARCHAR(1000) NULL
+);
+
+INSERT INTO dbo.maintenance_jobs (job_name, job_type, target, schedule_cron, run_as, last_status, last_run, notes) VALUES
+
+(N'idx-maint-nightly',         N'IndexMaintenance', NULL,
+ N'0 1 * * *', N'tycho-db automation', N'Succeeded', DATEADD(day,-1,SYSUTCDATETIME()),
+ N'Rebuild/reorg fragmented indexes on crew_manifest and ships.'),
+
+(N'stats-refresh-weekly',      N'StatsUpdate',      NULL,
+ N'0 3 * * 0', N'tycho-db automation', N'Succeeded', DATEADD(day,-2,SYSUTCDATETIME()),
+ N'Full-scan statistics refresh across user tables.'),
+
+-- Breadcrumb: nightly export ships bacpacs off-box to the Ceres backups bucket.
+-- The host below is a placeholder; the Scopuli deployer patches in the real
+-- ceres<suffix> account name after this script runs.
+(N'tycho-db-nightly-exporter', N'BacpacExport',
+ N'https://ceres-PLACEHOLDER.blob.core.windows.net/db-backups',
+ N'0 2 * * *', N'platform-data-eng exporter SP', N'Succeeded', DATEADD(hour,-7,SYSUTCDATETIME()),
+ N'Nightly bacpac + bulk-csv export to the Ceres archives account (private container db-backups). Runner config and exporter SP creds are kept in the automation/ prefix inside that container.');

@@ -1,19 +1,20 @@
 variable "config" {
   description = "Configuration values including credentials, keys, and metadata."
   type = object({
-    client_ip               = string
-    subscription_id         = string
-    rocinante_ssh_key       = string
-    scopuli_ssh_key         = string
-    region                  = string
-    resource_grp_name       = string
-    scopuli_ssh_user        = string
-    tycho_sa_username       = string
-    tycho_sa_password       = string
-    donnager_admin_password = string
-    lab_uniq_id             = string
-    end_date                = string
-    verbose                 = bool
+    client_ip                  = string
+    subscription_id            = string
+    rocinante_ssh_key          = string
+    scopuli_ssh_key            = string
+    region                     = string
+    resource_grp_name          = string
+    scopuli_ssh_user           = string
+    tycho_sa_username          = string
+    tycho_sa_password          = string
+    donnager_admin_password    = string
+    lab_uniq_id                = string
+    end_date                   = string
+    verbose                    = bool
+    heartbeat_interval_minutes = number
   })
 }
 # Create random integer for unique names (used for Ganymede, tycho server, etc.)
@@ -750,7 +751,7 @@ resource "azurerm_service_plan" "app_tycho_terminal_serviceplan" {
   location            = azurerm_resource_group.res-114.location
   resource_group_name = azurerm_resource_group.res-114.name
   os_type             = "Linux"
-  sku_name            = "B1"
+  sku_name            = "B1" # B1 is cheaper but limited capacity wise, use P1v2 in high load times.
 }
 
 # Local zip of the tycho-terminal webapp. Latest version can be downloaded from https://github.com/clou42/tycho-terminal-webapp
@@ -1709,7 +1710,8 @@ resource "azuread_directory_role_assignment" "tycho_directory_reader_assignment"
 
 
 ## 1. Grant the scopuli MI db permissions, 
-## 2. Provision tycho-db from blob_resources/expanse_init.sql
+## 2. Provision tycho-db from scopuli_scripts/expanse_init.sql (inlined as base64
+##    via local.scopuli_provision_sh; not served from the public Pallas blob)
 ## 3. Grant the tycho-terminal webapp MI db reader and writer on tycho-db.
 ## 4. Insert Chrisjen's SP credentials into tycho-db (which then also becomes loot on the Scopuli)
 
@@ -1731,6 +1733,29 @@ locals {
 
   # Base64 for safe transport through JSON + bash + echo
   chrisjen_sql_b64 = base64encode(local.chrisjen_sql_string)
+
+  # Patch the maintenance_jobs breadcrumb (planted by expanse_init.sql with a
+  # placeholder host) with the real Ceres backups bucket name. The static seed
+  # can't know the per-deploy storage suffix, so the deployer rewrites it here,
+  # mirroring the Chrisjen UPDATE pattern above.
+  maintenance_jobs_sql_string = format(
+    "UPDATE dbo.maintenance_jobs SET target = 'https://%s.blob.core.windows.net/db-backups' WHERE job_name = N'tycho-db-nightly-exporter';",
+    azurerm_storage_account.archives_ceres.name
+  )
+  maintenance_jobs_sql_b64 = base64encode(local.maintenance_jobs_sql_string)
+
+  # The Scopuli provisioning script, pulled out into scopuli_scripts/
+  scopuli_provision_sh = templatefile("${path.module}/scopuli_scripts/provision-tycho-db.sh.tpl", {
+    expanse_init_b64         = base64encode(file("${path.module}/scopuli_scripts/expanse_init.sql"))
+    scopuli_provisioner_name = azurerm_user_assigned_identity.scopuli_sql_provisioner.name
+    sql_fqdn                 = azurerm_mssql_server.tycho.fully_qualified_domain_name
+    db_name                  = azurerm_mssql_database.tycho-db.name
+    tycho_sa_client_id       = azuread_application.tycho_sa_app.client_id
+    tycho_sa_secret          = azuread_service_principal_password.tycho_sa_sp_password.value
+    webapp_name              = azurerm_linux_web_app.tycho-terminal.name
+    chrisjen_sql_b64         = local.chrisjen_sql_b64
+    maintenance_jobs_sql_b64 = local.maintenance_jobs_sql_b64
+  })
 }
 
 # This is messy but it works. Actually this is the only way I found to deploy SQL in terraform only without using local resources. Also gives some hints on certain attacks on azure envs ;)
@@ -1741,16 +1766,19 @@ resource "azurerm_virtual_machine_extension" "scopuli_sql_provision" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  settings = <<SETTINGS
-{
-  "commandToExecute": "bash -c 'export DEBIAN_FRONTEND=\"noninteractive\" && apt-get update && apt-get install -y wget curl apt-transport-https gnupg jq && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && apt-get update && apt-get install sqlcmd && curl \"https://${azurerm_storage_account.storage_labpallas.name}.blob.core.windows.net/${azurerm_storage_container.pallas.name}/blob_resources/expanse_init.sql\" -o /tmp/expanse_init.sql && echo \"CREATE USER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}] FROM EXTERNAL PROVIDER; ALTER ROLE db_owner ADD MEMBER [${azurerm_user_assigned_identity.scopuli_sql_provisioner.name}];\" > /tmp/grant_mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryServicePrincipal -U ${azuread_application.tycho_sa_app.client_id} -P ${azuread_service_principal_password.tycho_sa_sp_password.value} -i /tmp/grant_mi.sql && curl -H \"Metadata:true\" \"http://169.254.169.254/metadata/identity/oauth2/token?resource=https://database.windows.net/&api-version=2018-02-01\" | jq -r .access_token > access.tkn && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/expanse_init.sql -P access.tkn && echo \"CREATE USER [${azurerm_linux_web_app.tycho-terminal.name}] FROM EXTERNAL PROVIDER;; ALTER ROLE db_datareader ADD MEMBER [${azurerm_linux_web_app.tycho-terminal.name}]; ALTER ROLE db_datawriter ADD MEMBER [${azurerm_linux_web_app.tycho-terminal.name}];\" > /tmp/grant_tycho-terminal-mi.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/grant_tycho-terminal-mi.sql -P access.tkn && echo \"${local.chrisjen_sql_b64}\" | base64 -d > /tmp/insert-SG-credentials.sql && sqlcmd -S tcp:${azurerm_mssql_server.tycho.fully_qualified_domain_name} -d ${azurerm_mssql_database.tycho-db.name} --authentication-method ActiveDirectoryManagedIdentity -I -i /tmp/insert-SG-credentials.sql -P access.tkn'"
-}
-SETTINGS
+  # The provisioning script lives in scopuli_scripts/provision-tycho-db.sh.tpl
+  # (rendered into local.scopuli_provision_sh). It's base64-encoded and decoded
+  # on the VM so the multi-line script survives transport through the extension
+  # settings JSON without escaping gymnastics.
+  settings = jsonencode({
+    commandToExecute = "echo ${base64encode(local.scopuli_provision_sh)} | base64 -d | bash"
+  })
 
   depends_on = [
     azurerm_linux_virtual_machine.scopuli,
     azurerm_user_assigned_identity.scopuli_sql_provisioner,
     azurerm_storage_account.storage_labpallas,
+    azurerm_storage_account.archives_ceres,
     azurerm_mssql_server.tycho,
     azurerm_mssql_database.tycho-db,
     azurerm_linux_web_app.tycho-terminal
