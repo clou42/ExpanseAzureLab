@@ -90,7 +90,7 @@ terraform apply
 
 Make sure to accept the changes (if you approve) by typing `yes` when Terraform asks for confirmation. 
 
-**Optional:** You can automate the three apply steps by running `./deploy.sh` from the project root. It runs the targeted applies in the correct order. Pass `--auto-approve` for non-interactive deployment: `./deploy.sh --auto-approve`. To update the whitelisted client IP in `terraform.tfvars` before deploying, use `--client-ip <ip>` to specify it explicitly or `--use-current-ip` to auto-detect your public IP (requires `terraform.tfvars` to exist).
+**Optional:** You can automate the three apply steps by running `./deploy.sh` from the project root. It runs the targeted applies in the correct order. Pass `--auto-approve` for non-interactive deployment: `./deploy.sh --auto-approve`. To update the whitelisted client IP in `terraform.tfvars` before deploying, use `--client-ip <ip>` to specify it explicitly or `--use-current-ip` to auto-detect your public IP (requires `terraform.tfvars` to exist). To tear the lab down again, run `./deploy.sh --destroy` (add `--auto-approve` to skip the confirmation prompt). Run `./deploy.sh --help` for the full option list.
 
 After successfully creating the lab environment, the `tycho_terminal_webapp_fqdn` is printed. This is the starting point for a CTF you can try.
 If you instead want a VERY verbose output for direct access to all users and resources, set the `verbose` flag in the `terraform.tfvars` file to true:
@@ -189,11 +189,15 @@ There also is a nice diagram illustrating the architecture of the lab containing
 Refer to the `AzureLab_Architecture.pdf`.
 
 ## Destroying / Clean-up
-To clean up the lab, use the 
+To clean up the lab, run
+```
+./deploy.sh --destroy
+```
+from the project root (add `--auto-approve` to skip the confirmation prompt). This is equivalent to running
 ```
 terraform destroy
 ```
-command.
+directly in `tfscripts/`.
 
 This works like a charm and I did not have any problems in the last several iterations of the lab.
 

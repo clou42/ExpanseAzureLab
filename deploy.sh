@@ -1,6 +1,27 @@
 #!/bin/bash
-# Deploy Expanse Azure Lab - runs targeted applies in required order
+# Manage the Expanse Azure Lab lifecycle.
+#   Default      : deploy the lab (runs targeted applies in the required order)
+#   --destroy    : tear the lab down again
 set -e
+
+usage() {
+  cat <<'USAGE'
+Usage: ./deploy.sh [options] [-- <extra terraform args>]
+
+Modes:
+  (default)              Deploy the lab (targeted applies in required order).
+  --destroy, -D          Destroy the lab.
+
+Options:
+  --client-ip, -i <ip>   Set client_ip in terraform.tfvars before deploying.
+  --use-current-ip       Auto-detect your public IP and use it as client_ip.
+  --help, -h             Show this help.
+
+Any unrecognized arguments are passed straight to terraform, e.g.:
+  ./deploy.sh --auto-approve
+  ./deploy.sh --destroy --auto-approve
+USAGE
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/tfscripts"
@@ -10,11 +31,25 @@ if [[ ! -f terraform.tfvars ]]; then
   exit 1
 fi
 
-# Parse script options (--client-ip, -i, --use-current-ip) and pass remainder to terraform
+# Parse script options and pass the remainder to terraform
+MODE="deploy"
 TF_ARGS=()
 CLIENT_IP=""
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --destroy|-D)
+      MODE="destroy"
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      TF_ARGS+=("$@")
+      break
+      ;;
     --client-ip|-i)
       if [[ -z "${2:-}" ]]; then
         echo "Error: --client-ip requires an IP address" >&2
@@ -38,6 +73,16 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$MODE" == "destroy" ]]; then
+  if [[ -n "$CLIENT_IP" ]]; then
+    echo "Warning: --client-ip/--use-current-ip is ignored in --destroy mode" >&2
+  fi
+  echo "==> Destroying the lab..."
+  terraform destroy "${TF_ARGS[@]}"
+  echo "==> Teardown complete."
+  exit 0
+fi
 
 # Update client_ip in terraform.tfvars if IP was specified and file exists
 if [[ -n "$CLIENT_IP" && -f terraform.tfvars ]]; then
