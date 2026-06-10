@@ -1888,6 +1888,34 @@ resource "azurerm_key_vault_secret" "tycho_conn" {
 
 ## IN-CLUSTER secrets
 
+# Fleet-ops runner SP - the credential stashed in the Earthfleet cluster.
+#
+
+resource "azuread_application" "fleet_runner_app" {
+  display_name = "MCRN-FleetOps-${var.config.lab_uniq_id}"
+}
+
+resource "azuread_service_principal" "fleet_runner_sp" {
+  client_id = azuread_application.fleet_runner_app.client_id
+}
+
+resource "azuread_service_principal_password" "fleet_runner_sp_password" {
+  service_principal_id = azuread_service_principal.fleet_runner_sp.id
+  end_date             = var.config.end_date
+}
+
+# Same custom RCE role the Scopuli MI uses, now also bound to the fleet-ops SP.
+resource "azurerm_role_assignment" "fleet_runner_donnager_exec" {
+  scope              = azurerm_windows_virtual_machine.donnager.id
+  role_definition_id = azurerm_role_definition.vm_donnager_exec.role_definition_resource_id
+  principal_id       = azuread_service_principal.fleet_runner_sp.object_id
+  depends_on = [
+    azurerm_role_definition.vm_donnager_exec,
+    azurerm_windows_virtual_machine.donnager,
+    azuread_service_principal.fleet_runner_sp,
+  ]
+}
+
 
 provider "kubernetes" {
   host                   = azurerm_kubernetes_cluster.earth_fleet.kube_admin_config[0].host
@@ -1897,20 +1925,23 @@ provider "kubernetes" {
 }
 
 
-# 1) Protomolecule app
-resource "kubernetes_secret_v1" "protomolecule_service_principal" {
+# 1) Fleet-ops runner credential - an SP that can RunCommand the Donnager VM.
+resource "kubernetes_secret_v1" "fleet_ops_runner" {
   metadata {
-    name      = "protomolecule-app-id"
+    name      = "fleet-ops-runner"
     namespace = "default"
     labels = {
-      faction = "unknown"
-      origin  = "unknown"
+      faction = "MCRN"
+      origin  = "intercept"
     }
   }
 
   data = {
-    app_id = azurerm_key_vault_secret.protomolecule_id.value
-    secret = azurerm_key_vault_secret.protomolecule_key.value
+    client_id     = azuread_application.fleet_runner_app.client_id
+    client_secret = azuread_service_principal_password.fleet_runner_sp_password.value
+    tenant_id     = data.azurerm_client_config.current.tenant_id
+    target_vm     = "Donnager"
+    note          = "RunCommand rights on Donnager. Used by fleet automation for patch runs."
   }
   type = "Opaque"
 }

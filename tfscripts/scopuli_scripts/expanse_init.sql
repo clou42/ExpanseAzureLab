@@ -223,11 +223,11 @@ CREATE TABLE dbo.protomolecule_samples (
 
 INSERT INTO dbo.protomolecule_samples (designation, storage_facility, clearance_level, status, handler_notes) VALUES
 (N'PROTO-001-EROS',     N'Phoebe Black Site - Vault 7',       N'BLACK - TYCHO COUNCIL',    N'Contained',
-   N'Recovered from Eros approach 2089-04. EM cage Level 4 required. Witness of record: Cortazar. Do not expose to organic matter.'),
+   N'Recovered from Eros approach 2089-04. EM cage Level 4 required. Full dossier and scans are too large for this table - they ship off-box with the nightly archive export. No analyst logins are issued for that store; the platform reads it back with the database''s own service identity.'),
 (N'PROTO-002-VENUS',    N'Behemoth Cargo Bay 3',              N'BLACK - OPA INNER CIRCLE', N'Lost',
    N'Sample escaped containment during transport from Venus orbit 2090-06. Behemoth on lockdown. Avasarala unaware. Recovery team: dispatched.'),
 (N'PROTO-003-GANYMEDE', N'Tycho Station - Refinery Vault A',  N'BLACK - TYCHO COUNCIL',    N'Sealed',
-   N'Recovered from Strickland blacksite on Ganymede. Mars believes destroyed. Do NOT disclose to Drummer.'),
+   N'Recovered from Strickland blacksite on Ganymede. Mars believes destroyed. Manifest mirrored to the cold-storage archive bucket - retrievable directly through the directory-reader identity this server already runs as, so nothing here needs a key or SAS. Do NOT disclose to Drummer.'),
 (N'PROTO-004-ILUS',     N'Rocinante Lab Module 2',            N'BLACK - HOLDEN ONLY',      N'Active',
    N'Sample taken from Ilus surface entity. Naomi flagged for review. Holden insists on retention. Magnetic suspension + redundant kill-switch.'),
 (N'PROTO-005-MEDINA',   N'Medina Station - Inaros Vault',     N'BLACK - FREE NAVY',        N'Unknown',

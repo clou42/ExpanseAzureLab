@@ -182,6 +182,22 @@ output "sql_mi_pivot_tycho_mi_umi_principal_id" {
   value       = var.config.verbose ? azurerm_user_assigned_identity.tycho_directory_reader.principal_id : null
 }
 
+# The exporter SP whose real creds live in the loot blob, plus the and the Vault name.
+output "sql_mi_pivot_exporter_sp_client_id" {
+  description = "Client ID of the tycho-db exporter SP - the real credential embedded in the automation/tycho-db_export_runner.json loot blob."
+  value       = var.config.verbose ? azuread_application.exporter_sp_app.client_id : null
+}
+
+output "sql_mi_pivot_exporter_sp_client_secret" {
+  description = "Client secret of the tycho-db exporter SP"
+  value       = var.config.verbose ? nonsensitive(azuread_service_principal_password.exporter_sp_password.value) : null
+}
+
+output "sql_mi_pivot_keyvault_name" {
+  description = "Name of the Ganymede vault."
+  value       = var.config.verbose ? azurerm_key_vault.vault_ganymede.name : null
+}
+
 # -------------------------
 # Optional debug outputs
 # -------------------------

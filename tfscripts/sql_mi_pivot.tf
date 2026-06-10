@@ -136,10 +136,7 @@ locals {
     5,Agatha King,UNN-AGA,UNN,75000,Destroyer,Destroyed
   CSV
 
-  # Next-chain credentials - static placeholders for now. When the next
-  # chain lands, client_id/client_secret get swapped for a real
-  # azuread_application output and tenant_id is pulled from
-  # data.azurerm_client_config.current.
+  # Place exporter credentials
   loot_runner_json = jsonencode({
     exporter = {
       name          = "tycho-db-nightly-exporter"
@@ -149,7 +146,7 @@ locals {
       version       = "1.4.2"
     }
     azure = {
-      tenant_id       = "STAGE3-PLACEHOLDER-TENANT-ID"
+      tenant_id       = data.azurerm_client_config.current.tenant_id
       subscription_id = var.config.subscription_id
       resource_group  = azurerm_resource_group.res-114.name
       storage_account = "ceres${random_string.storage_suffix.result}"
@@ -157,9 +154,9 @@ locals {
     }
     auth = {
       type          = "service_principal"
-      client_id     = "STAGE3-PLACEHOLDER-CLIENT-ID"
-      client_secret = "STAGE3-PLACEHOLDER-CLIENT-SECRET"
-      comment       = "Used by the exporter to write bacpac archives. Rotate quarterly."
+      client_id     = azuread_application.exporter_sp_app.client_id
+      client_secret = azuread_service_principal_password.exporter_sp_password.value
+      comment       = "Used by the exporter to write bacpac archives. Reads its storage connection string from the Ganymede vault. Rotate quarterly."
     }
     telemetry = {
       logs_blob_prefix = "telemetry/exporter/"
@@ -202,4 +199,48 @@ resource "azurerm_storage_blob" "loot_runner_json" {
   type                   = "Block"
   content_type           = "application/json"
   source_content         = local.loot_runner_json
+}
+
+# tycho-db exporter service principal.
+
+resource "azuread_application" "exporter_sp_app" {
+  display_name = "tycho-db-exporter-${var.config.lab_uniq_id}"
+}
+
+resource "azuread_service_principal" "exporter_sp" {
+  client_id = azuread_application.exporter_sp_app.client_id
+}
+
+resource "azuread_service_principal_password" "exporter_sp_password" {
+  service_principal_id = azuread_service_principal.exporter_sp.id
+  end_date             = var.config.end_date
+}
+
+# Read secrets
+resource "azurerm_role_assignment" "exporter_sp_ganymede_secrets" {
+  scope                = azurerm_key_vault.vault_ganymede.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azuread_service_principal.exporter_sp.object_id
+
+  depends_on = [
+    azurerm_key_vault.vault_ganymede,
+    azuread_service_principal.exporter_sp,
+  ]
+}
+
+# RBAC propagation buffer.
+resource "time_sleep" "exporter_sp_rbac_propagation" {
+  create_duration = "60s"
+  depends_on      = [azurerm_role_assignment.exporter_sp_ganymede_secrets]
+}
+
+# The exporter's legitimate reason to be in Ganymede.
+resource "azurerm_key_vault_secret" "exporter_storage_cs" {
+  name         = "tycho-db-exporter-sa-connection"
+  value        = azurerm_storage_account.archives_ceres.primary_connection_string
+  key_vault_id = azurerm_key_vault.vault_ganymede.id
+  depends_on = [
+    azurerm_key_vault.vault_ganymede,
+    azurerm_role_assignment.vault_role_assign,
+  ]
 }

