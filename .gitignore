@@ -16,3 +16,7 @@ attacks/chains.md
 # Kept locally but no longer tracked.
 attacks/AzureLabFull.pdf
 images/AzureLabFull.png
+
+# Diagram generators — kept locally, not tracked (the rendered outputs are committed instead).
+attacks/gen_attack_chart.py
+attacks/gen_snippets.py
