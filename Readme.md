@@ -2,7 +2,16 @@
 
 This lab has been built for testing, learning, and teaching different attack paths and security "flaws" in Azure. Deploy it in your own tenant to explore Azure security in a controlled environment.
 
-It is intended to be rolled out in your own Azure tenant. You need fairly high privileges to roll this lab out:
+## Architecture
+
+The general assets can be found in the following diagram (or `attacks/AzureLab_ResourceOverview.pdf`):
+![Resource Overview](attacks/AzureLab_ResourceOverview.png)
+
+There is also a diagram illustrating the lab's resources, the role/permission links, and the loot reachable along the way — a kind of attack map. It might not be exhaustive, maybe you will find more ;). **Spoilers** it lives in the `attacks` folder: see `attacks/AzureLab_AttackChart.svg` (also `.pdf` / `.png`) and [`attacks/attacks.md`](attacks/attacks.md).
+
+## Disclaimer
+
+This lab is intended to be rolled out in your own Azure tenant. You need fairly high privileges to roll this lab out:
 1. Owner on the subscription you want to create the resources in.
 2. Privileged Role Admin or something similar on tenant level, since we create a lot of Users/SPs, one of them getting "Directory Reader" access.
 
@@ -178,13 +187,6 @@ Now the lab should be correctly configured in your Azure subscription inside the
 
 **In case of errors when rolling out:**
 First, try to run `terraform apply` again. Sometimes the Azure backend is too slow in updating information in the background and Terraform may read stale role/identity info due to Azure propagation delays. If rolling out the lab permanently does not work open an issue.
-
-## Architecture
-
-The general assets can be found in the following diagram (or `attacks/AzureLab_ResourceOverview.pdf`):
-![Resource Overview](attacks/AzureLab_ResourceOverview.png)
-
-There is also a diagram illustrating the lab's resources, the role/permission links, and the loot reachable along the way — a kind of attack map. It might not be exhaustive, maybe you will find more ;). **Spoilers** it lives in the `attacks` folder: see `attacks/AzureLab_AttackChart.svg` (also `.pdf` / `.png`) and [`attacks/attacks.md`](attacks/attacks.md).
 
 ## Destroying / Clean-up
 To clean up the lab, run
