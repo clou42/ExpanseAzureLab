@@ -174,7 +174,7 @@ The public IPs of the VMs allow for SSH connections using the configured SSH key
 
 The verbose output also surfaces several service principals and managed identities (a privileged SP, the Tycho DB admin SP, code-execution users, and the VM managed identities) for direct access. Their exact privileges and intended access paths are spoilers - see [`attacks/permissions.md`](attacks/permissions.md).
 
-Now the lab should be correctly configured in you Azure subscription inside a new resource group `lab_uniq_id-ExpanseAzureSecLab` (depending on your configuration).
+Now the lab should be correctly configured in your Azure subscription inside the resource group you set via `resource_grp_name` (default `ExpanseAzureSecLab`). Note that `lab_uniq_id` is woven into user/service-principal/role names, not into the resource-group name.
 
 **In case of errors when rolling out:**
 First, try to run `terraform apply` again. Sometimes the Azure backend is too slow in updating information in the background and Terraform may read stale role/identity info due to Azure propagation delays. If rolling out the lab permanently does not work open an issue.
@@ -184,9 +184,12 @@ First, try to run `terraform apply` again. Sometimes the Azure backend is too sl
 The general assets can be found in the following diagram (or `AzureLabAssets.pdf`):
 ![Img](images/AzureLabAssets.png)
 
-There also is a nice diagram illustrating the architecture of the lab containing most valuable loot and most role/permission links, therefore also serving as a kind of attack map. The diagram might not be exhaustive, maybe you will find more ;). This one can be found in the `attacks` folder.
+An Expanse-themed, spoiler-free overview of the deployed resources is also available
+in `attacks/AzureLab_ResourceOverview.svg` (also `.pdf` / `.png`):
 
-Refer to the `AzureLab_Architecture.pdf`.
+![Resource Overview](attacks/AzureLab_ResourceOverview.png)
+
+There is also a diagram illustrating the lab's resources, the role/permission links, and the loot reachable along the way — a kind of attack map. It might not be exhaustive, maybe you will find more ;). **Spoilers**, so it lives in the `attacks` folder: see `attacks/AzureLab_AttackChart.svg` (also `.pdf` / `.png`) and [`attacks/attacks.md`](attacks/attacks.md).
 
 ## Destroying / Clean-up
 To clean up the lab, run

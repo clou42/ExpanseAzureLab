@@ -2,38 +2,24 @@
 
 This section is not complete and by no means exhaustive. The idea is to give some hints on what is possible in the lab.
 
+## Contents of `attacks/`
+
+- `attacks.md` — this file: player-facing hints and example exploits.
+- `permissions.md` — intended privileges / role reference (spoiler).
+- `AzureLab_AttackChart.{svg,pdf,png}` — generated attack map (resources · paths · loot).
+- `AzureLab_ResourceOverview.{svg,pdf,png}` — spoiler-free resource map (also linked from the root `Readme.md`).
+
 ## Architecture
 
-![Img](../images/AzureLabFull.png)
+### Attack Navigation Chart
 
-The same diagram as a PDF can be found in `/attacks/AzureLabFull.pdf`.
+The canonical map: an Expanse-themed vector chart of the lab's resources, the
+attack paths between them, and the loot reachable along the way; the paths shown
+are not exhaustive.
 
-Since the diagram is updated with delay, there is also a small ASCII overview:
+![Attack Navigation Chart](AzureLab_AttackChart.png)
 
-```
-ROAD A — SQL pivot  (reaches Ganymede directly)
-  E1 SSRF / E2 SQLi ─► webapp MI ─► S1 trigger-esc ─► db_owner
-    ─► S2 MI-pivot (sp_invoke + DB-scoped cred) ─► Ceres bucket ─► tycho-db-exporter SP
-    ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
-
-ROAD B — AKS  (reaches Ganymede via Donnager)
-  E1 SSRF / E2 SQLi ─► tycho-db read ─► espionage_credentials ─► Chrisjen SP
-    ─► AKS cluster-admin ─► kubectl get secrets ─► fleet-ops-runner SP
-    ─► RunCommand on Donnager ──────────────────┐
-                                                │
-ROAD C — VM ladder  (reaches Ganymede via Donnager)
-  E3 storage leak ─► credentials.json ─► Alex SP ─► V1 Rocinante RCE
-    ─► V2 KeysToTheScopuli MI ─► Scopuli
-        ├─► V4 RunCommand on Donnager ──────────┤
-        └─► V3 Owner on tycho-db ─► (rejoins Road A's SQL spine)
-                                                │
-  shared tail (Roads B & C):                    ▼
-    Donnager RCE ─► V5 JovianAccess MI ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
-
-SIDE LOOP  (from any Donnager foothold)
-  Donnager ─► V6 labpallas listKeys ─► deploycreds SP ─► Contributor on tycho-webapp
-    ─► SCM RCE ─► back to the web app
-```
+Vector source: `attacks/AzureLab_AttackChart.svg` (also exported as `.pdf` / `.png`).
 
 ### Tycho-terminal web service
 
@@ -69,7 +55,7 @@ In the leaked environment variables the URL of the deployed source code can be f
 First, login as `aburton@yourdomain` via `az login`.
 Then: 
 ```
-az ssh vm -n Rocinante -g [lab_uniq_id]_ExpanseAzureSecLab
+az ssh vm -n Rocinante -g [rg_name]
 ```
 
 ### SSH to Rocinante/Scopuli via Key
@@ -106,7 +92,7 @@ An example attack is to use the user-assigned managed identity bound to the `Roc
 1. SSH to the `Rocinante`: `ssh [Rocinante_admin_user]@[Rocinante_public_IP] -i [Rocinante_private_key]`
 2. Install `azure-cli` on the VM (`sudo apt update && sudo apt install azure-cli`)
 3. Log in with the user MI on the `Rocinante` VM: `az login --identity --user [KeysToTheScopuli_MI_principal_id]`
-4. Confirm RCE is possible: `az vm run-command invoke --resource-group [lab_uniq_id]_ExpanseAzureSecLab -n Scopuli --command-id RunShellScript --scripts "touch /runcommandTest.txt"`
+4. Confirm RCE is possible: `az vm run-command invoke --resource-group [rg_name] -n Scopuli --command-id RunShellScript --scripts "touch /runcommandTest.txt"`
 
 ### Get Managed Identity token on VM
 
@@ -395,7 +381,7 @@ az login --service-principal -u "[chrisjen_client_id]" --password '[chrisjen_cli
 Get cluster credentials
 ```
 az aks get-credentials \
-  --resource-group [lab_uniq_id]-ExpanseAzureSecLab \
+  --resource-group [rg_name] \
   --name un_fleet_[lab_uniq_id] \
   --query "apiServerAccessProfile.enablePrivateCluster" --overwrite-existing
 ```
