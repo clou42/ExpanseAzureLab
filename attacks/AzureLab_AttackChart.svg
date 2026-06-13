@@ -86,21 +86,21 @@
 <path d="M1123.0,842.3 Q1154.0,812.5 1183.6,821.9" fill="none" stroke="#f3a83a" stroke-width="7.6" opacity="0.12" stroke-linecap="round"/>
 <path d="M1123.0,842.3 Q1154.0,812.5 1183.6,821.9" fill="none" stroke="#f3a83a" stroke-width="2.6" stroke-linecap="round" opacity="0.95"/>
 <path d="M1195.0,825.5 L1181.2,825.9 L1186.8,822.9 L1184.0,817.3 Z" fill="#f3a83a"/>
-<path d="M961.4,825.0 Q830.0,572.7 641.9,375.7" fill="none" stroke="#f3a83a" stroke-width="7.6" opacity="0.12" stroke-linecap="round"/>
-<path d="M961.4,825.0 Q830.0,572.7 641.9,375.7" fill="none" stroke="#f3a83a" stroke-width="2.6" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.95"/>
-<path d="M633.6,367.0 L645.9,373.3 L639.6,373.2 L639.4,379.5 Z" fill="#f3a83a"/>
+<path d="M961.4,825.0 Q672.3,685.6 635.1,378.9" fill="none" stroke="#f3a83a" stroke-width="7.6" opacity="0.12" stroke-linecap="round"/>
+<path d="M961.4,825.0 Q672.3,685.6 635.1,378.9" fill="none" stroke="#f3a83a" stroke-width="2.6" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.95"/>
+<path d="M633.6,367.0 L639.7,379.4 L634.7,375.5 L630.7,380.4 Z" fill="#f3a83a"/>
 <path d="M1342.0,753.0 Q1458.6,653.6 1522.5,527.7" fill="none" stroke="#ffd34d" stroke-width="8.4" opacity="0.12" stroke-linecap="round"/>
 <path d="M1342.0,753.0 Q1458.6,653.6 1522.5,527.7" fill="none" stroke="#ffd34d" stroke-width="3.4" stroke-linecap="round" opacity="0.95"/>
 <path d="M1528.0,517.0 L1526.1,530.6 L1524.1,524.6 L1518.1,526.6 Z" fill="#ffd34d"/>
 <path d="M1594.6,423.0 Q1630.3,392.5 1639.3,358.6" fill="none" stroke="#ffd34d" stroke-width="8.4" opacity="0.12" stroke-linecap="round"/>
 <path d="M1594.6,423.0 Q1630.3,392.5 1639.3,358.6" fill="none" stroke="#ffd34d" stroke-width="3.4" stroke-linecap="round" opacity="0.95"/>
 <path d="M1642.4,347.0 L1643.4,360.7 L1640.2,355.3 L1634.7,358.4 Z" fill="#ffd34d"/>
-<path d="M1670.2,347.0 Q1632.1,450.7 1658.7,545.4" fill="none" stroke="#ffd34d" stroke-width="8.6" opacity="0.12" stroke-linecap="round"/>
-<path d="M1670.2,347.0 Q1632.1,450.7 1658.7,545.4" fill="none" stroke="#ffd34d" stroke-width="3.6" stroke-linecap="round" opacity="0.95"/>
-<path d="M1662.0,557.0 L1654.1,545.7 L1659.7,548.7 L1662.8,543.3 Z" fill="#ffd34d"/>
-<path d="M1195.0,810.9 Q765.6,733.1 371.2,889.6" fill="none" stroke="#ff5d5d" stroke-width="7.2" opacity="0.12" stroke-linecap="round"/>
-<path d="M1195.0,810.9 Q765.6,733.1 371.2,889.6" fill="none" stroke="#ff5d5d" stroke-width="2.2" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.95"/>
-<path d="M360.0,894.1 L370.4,885.1 L368.0,890.9 L373.7,893.4 Z" fill="#ff5d5d"/>
+<path d="M1670.2,347.0 Q1708.0,453.6 1666.9,546.0" fill="none" stroke="#ffd34d" stroke-width="8.6" opacity="0.12" stroke-linecap="round"/>
+<path d="M1670.2,347.0 Q1708.0,453.6 1666.9,546.0" fill="none" stroke="#ffd34d" stroke-width="3.6" stroke-linecap="round" opacity="0.95"/>
+<path d="M1662.0,557.0 L1663.2,543.3 L1665.5,549.2 L1671.4,547.0 Z" fill="#ffd34d"/>
+<path d="M1195.0,810.9 Q760.5,681.3 370.6,888.4" fill="none" stroke="#ff5d5d" stroke-width="7.2" opacity="0.12" stroke-linecap="round"/>
+<path d="M1195.0,810.9 Q760.5,681.3 370.6,888.4" fill="none" stroke="#ff5d5d" stroke-width="2.2" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.95"/>
+<path d="M360.0,894.1 L369.4,884.0 L367.6,890.0 L373.6,891.9 Z" fill="#ff5d5d"/>
 <path d="M242.3,858.0 Q284.1,678.8 193.9,532.2" fill="none" stroke="#ff5d5d" stroke-width="7.2" opacity="0.12" stroke-linecap="round"/>
 <path d="M242.3,858.0 Q284.1,678.8 193.9,532.2" fill="none" stroke="#ff5d5d" stroke-width="2.2" stroke-dasharray="8 6" stroke-linecap="round" opacity="0.95"/>
 <path d="M187.7,522.0 L198.3,530.7 L192.1,529.3 L190.6,535.4 Z" fill="#ff5d5d"/>
@@ -121,9 +121,9 @@
 <path d="M697.5,288.5 L704.5,285.0 L711.5,288.5 L704.5,299.0 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
 <circle cx="713.5" cy="285.0" r="8" fill="#ff5d5d"/>
 <text x="713.5" y="288.5" font-size="11" fill="#fff" font-weight="bold" text-anchor="middle" class="font-mono">2</text>
-<rect x="874.0" y="125.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#f3a83a" stroke-width="1.8" filter="url(#soft)"/>
-<rect x="874.0" y="125.0" width="6" height="86" rx="3" fill="#f3a83a"/>
-<g><rect x="898.0" y="149" width="28" height="26" rx="3" fill="none" stroke="#f3a83a" stroke-width="2"/><line x1="898.0" y1="155.5" x2="926.0" y2="155.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="898.0" y1="162.0" x2="926.0" y2="162.0" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="898.0" y1="168.5" x2="926.0" y2="168.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/></g>
+<rect x="874.0" y="125.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#ef7c28" stroke-width="1.8" filter="url(#soft)"/>
+<rect x="874.0" y="125.0" width="6" height="86" rx="3" fill="#ef7c28"/>
+<g><rect x="898.0" y="149" width="28" height="26" rx="3" fill="none" stroke="#ef7c28" stroke-width="2"/><line x1="898.0" y1="155.5" x2="926.0" y2="155.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="898.0" y1="162.0" x2="926.0" y2="162.0" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="898.0" y1="168.5" x2="926.0" y2="168.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/></g>
 <text x="940.0" y="162.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">Ceres</text>
 <text x="940.0" y="183.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Storage · archive</text>
 <path d="M1063.0,136.5 L1070.0,133.0 L1077.0,136.5 L1070.0,147.0 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
@@ -149,9 +149,9 @@
 <text x="1280.0" y="514.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">fleet-ops-runner</text>
 <text x="1280.0" y="535.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">SP · k8s secret</text>
 <path d="M1433.0,488.5 L1440.0,485.0 L1447.0,488.5 L1440.0,499.0 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
-<rect x="144.0" y="862.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#f3a83a" stroke-width="1.8" filter="url(#soft)"/>
-<rect x="144.0" y="862.0" width="6" height="86" rx="3" fill="#f3a83a"/>
-<g><rect x="168.0" y="886" width="28" height="26" rx="3" fill="none" stroke="#f3a83a" stroke-width="2"/><line x1="168.0" y1="892.5" x2="196.0" y2="892.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="168.0" y1="899.0" x2="196.0" y2="899.0" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="168.0" y1="905.5" x2="196.0" y2="905.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/></g>
+<rect x="144.0" y="862.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#ef7c28" stroke-width="1.8" filter="url(#soft)"/>
+<rect x="144.0" y="862.0" width="6" height="86" rx="3" fill="#ef7c28"/>
+<g><rect x="168.0" y="886" width="28" height="26" rx="3" fill="none" stroke="#ef7c28" stroke-width="2"/><line x1="168.0" y1="892.5" x2="196.0" y2="892.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="168.0" y1="899.0" x2="196.0" y2="899.0" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="168.0" y1="905.5" x2="196.0" y2="905.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/></g>
 <text x="210.0" y="899.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">labpallas</text>
 <text x="210.0" y="920.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Storage · public</text>
 <path d="M333.0,873.5 L340.0,870.0 L347.0,873.5 L340.0,884.0 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
@@ -191,9 +191,9 @@
 <text x="1525.0" y="464.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">Ganymede</text>
 <text x="1525.0" y="485.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Key Vault</text>
 <path d="M1648.0,438.5 L1655.0,435.0 L1662.0,438.5 L1655.0,449.0 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
-<rect x="1565.5" y="257.0" width="213" height="86" rx="12" fill="url(#cardGrad)" stroke="#5ad1ff" stroke-width="1.8" filter="url(#soft)"/>
-<rect x="1565.5" y="257.0" width="6" height="86" rx="3" fill="#5ad1ff"/>
-<g><circle cx="1603.5" cy="287" r="6" fill="none" stroke="#5ad1ff" stroke-width="2"/><path d="M1592.5,307 a11,11 0 0 1 22,0" fill="none" stroke="#5ad1ff" stroke-width="2"/></g>
+<rect x="1565.5" y="257.0" width="213" height="86" rx="12" fill="url(#cardGrad)" stroke="#b9a7ff" stroke-width="1.8" filter="url(#soft)"/>
+<rect x="1565.5" y="257.0" width="6" height="86" rx="3" fill="#b9a7ff"/>
+<g><circle cx="1603.5" cy="287" r="6" fill="none" stroke="#b9a7ff" stroke-width="2"/><path d="M1592.5,307 a11,11 0 0 1 22,0" fill="none" stroke="#b9a7ff" stroke-width="2"/></g>
 <text x="1631.5" y="294.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">Protomolecule</text>
 <text x="1631.5" y="315.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Service Principal</text>
 <ellipse cx="1660" cy="608" rx="213" ry="118" fill="url(#crownGlow)"/>
@@ -202,10 +202,10 @@
 <g><path d="M1570.0,612 L1570.0,598 L1578.0,605 L1586.0,591 L1594.0,605 L1602.0,598 L1602.0,612 Z" fill="none" stroke="#ffd34d" stroke-width="2.4" stroke-linejoin="round"/><line x1="1570.0" y1="615" x2="1602.0" y2="615" stroke="#ffd34d" stroke-width="2.4"/><circle cx="1578.0" cy="600" r="1.7" fill="#ffd34d"/><circle cx="1586.0" cy="600" r="1.7" fill="#ffd34d"/><circle cx="1594.0" cy="600" r="1.7" fill="#ffd34d"/></g>
 <text x="1614.0" y="602.0" font-size="18" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">CROWN JEWELS</text>
 <text x="1614.0" y="623.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Contributor on RG</text>
-<rect x="287.0" y="387.8" width="146" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
-<text x="360.0" y="401.8" font-size="11.5" fill="#37d6e6" font-weight="normal" text-anchor="middle" class="font-mono">SSRF / SQL injection</text>
-<rect x="273.8" y="412.8" width="172" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
-<text x="360.0" y="426.8" font-size="11.5" fill="#37d6e6" font-weight="normal" text-anchor="middle" class="font-mono">SQL privilege escalation</text>
+<rect x="305.3" y="364.1" width="146" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
+<text x="378.3" y="378.1" font-size="11.5" fill="#37d6e6" font-weight="normal" text-anchor="middle" class="font-mono">SSRF / SQL injection</text>
+<rect x="292.1" y="389.1" width="172" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
+<text x="378.3" y="403.1" font-size="11.5" fill="#37d6e6" font-weight="normal" text-anchor="middle" class="font-mono">SQL privilege escalation</text>
 <rect x="707.8" y="207.7" width="159" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
 <text x="787.4" y="221.7" font-size="11.5" fill="#37d6e6" font-weight="normal" text-anchor="middle" class="font-mono">managed-identity abuse</text>
 <rect x="1093.7" y="146.7" width="113" height="19" rx="9.5" fill="#05070f" stroke="#37d6e6" stroke-width="1" opacity="0.96"/>
@@ -230,16 +230,16 @@
 <text x="838.1" y="843.7" font-size="11.5" fill="#f3a83a" font-weight="normal" text-anchor="middle" class="font-mono">managed-identity abuse</text>
 <rect x="1093.4" y="804.2" width="126" height="19" rx="9.5" fill="#05070f" stroke="#f3a83a" stroke-width="1" opacity="0.96"/>
 <text x="1156.5" y="818.2" font-size="11.5" fill="#f3a83a" font-weight="normal" text-anchor="middle" class="font-mono">command execution</text>
-<rect x="784.0" y="550.6" width="106" height="19" rx="9.5" fill="#05070f" stroke="#f3a83a" stroke-width="1" opacity="0.96"/>
-<text x="837.2" y="564.6" font-size="11.5" fill="#f3a83a" font-weight="normal" text-anchor="middle" class="font-mono">excessive RBAC</text>
+<rect x="669.7" y="633.8" width="106" height="19" rx="9.5" fill="#05070f" stroke="#f3a83a" stroke-width="1" opacity="0.96"/>
+<text x="722.9" y="647.8" font-size="11.5" fill="#f3a83a" font-weight="normal" text-anchor="middle" class="font-mono">excessive RBAC</text>
 <rect x="1403.2" y="633.3" width="159" height="19" rx="9.5" fill="#05070f" stroke="#ffd34d" stroke-width="1" opacity="0.96"/>
 <text x="1482.8" y="647.3" font-size="11.5" fill="#ffd34d" font-weight="normal" text-anchor="middle" class="font-mono">managed-identity abuse</text>
 <rect x="1591.9" y="377.7" width="113" height="19" rx="9.5" fill="#05070f" stroke="#ffd34d" stroke-width="1" opacity="0.96"/>
 <text x="1648.4" y="391.7" font-size="11.5" fill="#ffd34d" font-weight="normal" text-anchor="middle" class="font-mono">credential leak</text>
-<rect x="1637.9" y="440.3" width="106" height="19" rx="9.5" fill="#05070f" stroke="#ffd34d" stroke-width="1" opacity="0.96"/>
-<text x="1691.1" y="454.3" font-size="11.5" fill="#ffd34d" font-weight="normal" text-anchor="middle" class="font-mono">excessive RBAC</text>
-<rect x="718.4" y="771.8" width="106" height="19" rx="9.5" fill="#05070f" stroke="#ff5d5d" stroke-width="1" opacity="0.96"/>
-<text x="771.6" y="785.8" font-size="11.5" fill="#ff5d5d" font-weight="normal" text-anchor="middle" class="font-mono">key disclosure</text>
+<rect x="1661.9" y="441.8" width="106" height="19" rx="9.5" fill="#05070f" stroke="#ffd34d" stroke-width="1" opacity="0.96"/>
+<text x="1715.1" y="455.8" font-size="11.5" fill="#ffd34d" font-weight="normal" text-anchor="middle" class="font-mono">excessive RBAC</text>
+<rect x="727.8" y="775.9" width="106" height="19" rx="9.5" fill="#05070f" stroke="#ff5d5d" stroke-width="1" opacity="0.96"/>
+<text x="781.0" y="789.9" font-size="11.5" fill="#ff5d5d" font-weight="normal" text-anchor="middle" class="font-mono">key disclosure</text>
 <rect x="183.9" y="706.4" width="126" height="19" rx="9.5" fill="#05070f" stroke="#ff5d5d" stroke-width="1" opacity="0.96"/>
 <text x="247.0" y="720.4" font-size="11.5" fill="#ff5d5d" font-weight="normal" text-anchor="middle" class="font-mono">command execution</text>
 <text x="70.0" y="52.0" font-size="34" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono" letter-spacing="6">EXPANSE  AZURE  LAB</text>
@@ -270,7 +270,5 @@
 <text x="1420.0" y="1044.0" font-size="12" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">V6 side loop — back to the web app</text>
 <path d="M1371.5,1060.75 L1378,1057.5 L1384.5,1060.75 L1378,1070.5 Z" fill="#ffd34d" stroke="#1a1200" stroke-width="0.7"/>
 <text x="1392.0" y="1068.0" font-size="12" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">= loot / credential reachable here</text>
-<text x="72.0" y="1158.0" font-size="11.5" fill="#566489" font-weight="normal" text-anchor="start" class="font-mono" letter-spacing="1">source of truth: attacks/chains.md · attacks/attacks.md</text>
-<text x="1786.0" y="1158.0" font-size="11.5" fill="#566489" font-weight="normal" text-anchor="end" class="font-mono" letter-spacing="1">regen: python3 attacks/gen_attack_chart.py</text>
 <rect width="1840" height="1200" fill="url(#vignette)"/>
 </svg>

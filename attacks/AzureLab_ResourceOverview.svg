@@ -67,14 +67,14 @@
 <g><circle cx="1439.0" cy="319" r="8" fill="none" stroke="#69f0b0" stroke-width="2.2"/><path d="M1443.0,323 L1453.0,333 M1449.0,329 L1453.0,325 M1453.0,333 L1450.0,336" stroke="#69f0b0" stroke-width="2.2" fill="none"/></g>
 <text x="1470.0" y="324.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">Ganymede</text>
 <text x="1470.0" y="345.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Key Vault</text>
-<rect x="614.0" y="547.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#f3a83a" stroke-width="1.8" filter="url(#soft)"/>
-<rect x="614.0" y="547.0" width="6" height="86" rx="3" fill="#f3a83a"/>
-<g><rect x="638.0" y="571" width="28" height="26" rx="3" fill="none" stroke="#f3a83a" stroke-width="2"/><line x1="638.0" y1="577.5" x2="666.0" y2="577.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="638.0" y1="584.0" x2="666.0" y2="584.0" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="638.0" y1="590.5" x2="666.0" y2="590.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/></g>
+<rect x="614.0" y="547.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#ef7c28" stroke-width="1.8" filter="url(#soft)"/>
+<rect x="614.0" y="547.0" width="6" height="86" rx="3" fill="#ef7c28"/>
+<g><rect x="638.0" y="571" width="28" height="26" rx="3" fill="none" stroke="#ef7c28" stroke-width="2"/><line x1="638.0" y1="577.5" x2="666.0" y2="577.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="638.0" y1="584.0" x2="666.0" y2="584.0" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="638.0" y1="590.5" x2="666.0" y2="590.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/></g>
 <text x="680.0" y="584.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">Ceres</text>
 <text x="680.0" y="605.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Storage account</text>
-<rect x="1014.0" y="547.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#f3a83a" stroke-width="1.8" filter="url(#soft)"/>
-<rect x="1014.0" y="547.0" width="6" height="86" rx="3" fill="#f3a83a"/>
-<g><rect x="1038.0" y="571" width="28" height="26" rx="3" fill="none" stroke="#f3a83a" stroke-width="2"/><line x1="1038.0" y1="577.5" x2="1066.0" y2="577.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="1038.0" y1="584.0" x2="1066.0" y2="584.0" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="1038.0" y1="590.5" x2="1066.0" y2="590.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/></g>
+<rect x="1014.0" y="547.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#ef7c28" stroke-width="1.8" filter="url(#soft)"/>
+<rect x="1014.0" y="547.0" width="6" height="86" rx="3" fill="#ef7c28"/>
+<g><rect x="1038.0" y="571" width="28" height="26" rx="3" fill="none" stroke="#ef7c28" stroke-width="2"/><line x1="1038.0" y1="577.5" x2="1066.0" y2="577.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="1038.0" y1="584.0" x2="1066.0" y2="584.0" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="1038.0" y1="590.5" x2="1066.0" y2="590.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/></g>
 <text x="1080.0" y="584.0" font-size="16.5" fill="#e8eefc" font-weight="bold" text-anchor="start" class="font-mono">labpallas</text>
 <text x="1080.0" y="605.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Storage account</text>
 <rect x="474.0" y="809.0" width="212" height="86" rx="12" fill="url(#cardGrad)" stroke="#7fa8ff" stroke-width="1.8" filter="url(#soft)"/>
@@ -106,11 +106,9 @@
 <text x="134.0" y="1048.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Azure SQL</text>
 <g><polygon points="336.0,1035.5 336.0,1050.5 323.0,1058.0 310.0,1050.5 310.0,1035.5 323.0,1028.0" fill="none" stroke="#e85bd0" stroke-width="2"/><circle cx="323" cy="1043" r="3.4" fill="#e85bd0"/><line x1="323" y1="1043" x2="323.0" y2="1034.0" stroke="#e85bd0" stroke-width="1.2" opacity="0.8"/><line x1="323" y1="1043" x2="331.6" y2="1040.2" stroke="#e85bd0" stroke-width="1.2" opacity="0.8"/><line x1="323" y1="1043" x2="328.3" y2="1050.3" stroke="#e85bd0" stroke-width="1.2" opacity="0.8"/><line x1="323" y1="1043" x2="317.7" y2="1050.3" stroke="#e85bd0" stroke-width="1.2" opacity="0.8"/><line x1="323" y1="1043" x2="314.4" y2="1040.2" stroke="#e85bd0" stroke-width="1.2" opacity="0.8"/></g>
 <text x="348.0" y="1048.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">AKS cluster</text>
-<g><rect x="95" y="1072" width="28" height="26" rx="3" fill="none" stroke="#f3a83a" stroke-width="2"/><line x1="95" y1="1078.5" x2="123" y2="1078.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="95" y1="1085.0" x2="123" y2="1085.0" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/><line x1="95" y1="1091.5" x2="123" y2="1091.5" stroke="#f3a83a" stroke-width="1.2" opacity="0.7"/></g>
+<g><rect x="95" y="1072" width="28" height="26" rx="3" fill="none" stroke="#ef7c28" stroke-width="2"/><line x1="95" y1="1078.5" x2="123" y2="1078.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="95" y1="1085.0" x2="123" y2="1085.0" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/><line x1="95" y1="1091.5" x2="123" y2="1091.5" stroke="#ef7c28" stroke-width="1.2" opacity="0.7"/></g>
 <text x="134.0" y="1090.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Storage account</text>
 <g><circle cx="320" cy="1080" r="8" fill="none" stroke="#69f0b0" stroke-width="2.2"/><path d="M324,1084 L334,1094 M330,1090 L334,1086 M334,1094 L331,1097" stroke="#69f0b0" stroke-width="2.2" fill="none"/></g>
 <text x="348.0" y="1090.0" font-size="12.5" fill="#8fa3c8" font-weight="normal" text-anchor="start" class="font-mono">Key Vault</text>
-<text x="72.0" y="1158.0" font-size="11.5" fill="#566489" font-weight="normal" text-anchor="start" class="font-mono" letter-spacing="1">Expanse Azure Lab — deployed resource inventory</text>
-<text x="1786.0" y="1158.0" font-size="11.5" fill="#566489" font-weight="normal" text-anchor="end" class="font-mono" letter-spacing="1">regen: python3 attacks/gen_attack_chart.py overview</text>
 <rect width="1840" height="1200" fill="url(#vignette)"/>
 </svg>
