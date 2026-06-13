@@ -12,8 +12,7 @@ verify/
 attacks/*_walkthrough.md
 attacks/chains.md
 
-# Retired hand-drawn diagram — superseded by the generated AzureLab_AttackChart.
-# Kept locally but no longer tracked.
+# Retired hand-drawn diagrams
 attacks/AzureLabFull.pdf
 images/AzureLabFull.png
 
