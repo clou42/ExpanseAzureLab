@@ -74,6 +74,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Initialize providers/backend (idempotent; required on a fresh checkout)
+echo "==> Initializing Terraform..."
+terraform init -input=false
+
 if [[ "$MODE" == "destroy" ]]; then
   if [[ -n "$CLIENT_IP" ]]; then
     echo "Warning: --client-ip/--use-current-ip is ignored in --destroy mode" >&2
