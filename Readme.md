@@ -2,7 +2,16 @@
 
 This lab has been built for testing, learning, and teaching different attack paths and security "flaws" in Azure. Deploy it in your own tenant to explore Azure security in a controlled environment.
 
-It is intended to be rolled out in your own Azure tenant. You need fairly high privileges to roll this lab out:
+## Architecture
+
+The general assets can be found in the following diagram (or as [PDF](attacks/AzureLab_ResourceOverview.pdf)):
+![Resource Overview](attacks/AzureLab_ResourceOverview.png)
+
+There is also a diagram illustrating the lab's resources, the role/permission links, and the loot reachable along the way — a kind of attack map. It might not be exhaustive, maybe you will find more ;). **Spoilers** it lives in the `attacks` folder: see [AzureLab_AttackChart.svg](attacks/AzureLab_AttackChart.svg) (also [.pdf](attacks/AzureLab_AttackChart.pdf) / [.png](attacks/AzureLab_AttackChart.png)) and [`attacks/attacks.md`](attacks/attacks.md).
+
+## Disclaimer
+
+This lab is intended to be rolled out in your own Azure tenant. You need fairly high privileges to roll this lab out:
 1. Owner on the subscription you want to create the resources in.
 2. Privileged Role Admin or something similar on tenant level, since we create a lot of Users/SPs, one of them getting "Directory Reader" access.
 
@@ -19,7 +28,7 @@ All Terraform related operations have to be conducted from inside the `tfscripts
 
 Create a copy of the `terraform.tfvars.example` file with the name `terraform.tfvars`. This will be your lab configuration.
 Configure your public IP as `client_ip`, your `subscription_id` in the `terraform.tfvars` file. If needed you can also change the deployment region in that file.
-```
+```hcl
 client_ip = "198.51.100.1" # Public IP for firewall whitelisting on DBs and VMs.
 subscription_id = "12345678-1234-1234-1234-123456781234"
 ```
@@ -36,7 +45,7 @@ You can set a name for the resource group that will be holding your lab resource
 In this configuration, you can also configure the SSH keys for the `Rocinante` and `Scopuli` VMs. Just create fresh keypair(s) and put the public part in the `terraform.tfvars` file:
 
 
-```
+```hcl
 rocinante_ssh_key = "ssh-rsa ..."
 scopuli_ssh_key = "ssh-rsa ..."
 ```
@@ -66,35 +75,51 @@ The lab will deploy in the tenant of your currently logged-in user, check that i
 You can double-check with:
 `az account show`
 
-Make sure you are inside the `tfscripts` folder for the following commands.
+### Recommended: the `deploy.sh` script
+
+The easiest way to deploy is the `deploy.sh` wrapper. From the project root, run:
+
+```bash
+./deploy.sh
+```
+
+It runs `terraform init` and then the three Terraform apply steps in the correct order (see *Manual deployment* below for what each step does). Useful flags:
+
+- `--auto-approve` — non-interactive deployment, skips the Terraform confirmation prompts (`./deploy.sh --auto-approve`).
+- `--client-ip <ip>` — set the whitelisted client IP in `terraform.tfvars` before deploying.
+- `--use-current-ip` — auto-detect your public IP for the whitelist (requires `terraform.tfvars` to exist).
+- `--destroy` — tear the lab down again (add `--auto-approve` to skip the confirmation prompt).
+- `--help` — the full option list.
+
+### Manual deployment (Terraform)
+
+If you prefer to run the steps yourself — this is exactly what `deploy.sh` automates — make sure you are inside the `tfscripts` folder for the following commands.
 
 Initialize Terraform (download necessary providers etc.)
 
-```
+```bash
 terraform init
 ```
 
 Then we deploy the user definitions. This has to happen before the other steps because of dependencies in `for_each` loops.
-```
+```bash
 terraform apply -target azuread_user.users
 ```
 Then create all the service principals, which basically clones the users into SPs. They allow for testing and playing around without needing to configure MFA:
-```
+```bash
 terraform apply -target azuread_service_principal.sp
 ```
 
 Afterwards, apply the rest of the TF script with:
-```
+```bash
 terraform apply
 ```
 
-Make sure to accept the changes (if you approve) by typing `yes` when Terraform asks for confirmation. 
-
-**Optional:** You can automate the three apply steps by running `./deploy.sh` from the project root. It runs the targeted applies in the correct order. Pass `--auto-approve` for non-interactive deployment: `./deploy.sh --auto-approve`. To update the whitelisted client IP in `terraform.tfvars` before deploying, use `--client-ip <ip>` to specify it explicitly or `--use-current-ip` to auto-detect your public IP (requires `terraform.tfvars` to exist). To tear the lab down again, run `./deploy.sh --destroy` (add `--auto-approve` to skip the confirmation prompt). Run `./deploy.sh --help` for the full option list.
+Make sure to accept the changes (if you approve) by typing `yes` when Terraform asks for confirmation.
 
 After successfully creating the lab environment, the `tycho_terminal_webapp_fqdn` is printed. This is the starting point for a CTF you can try.
 If you instead want a VERY verbose output for direct access to all users and resources, set the `verbose` flag in the `terraform.tfvars` file to true:
-```
+```hcl
 Donnager_MI_principal_id = "12345678-1234-1234-1234-123456781234"
 Donnager_admin_user = "yao"
 Donnager_public_IP = "198.51.100.3"
@@ -174,27 +199,18 @@ The public IPs of the VMs allow for SSH connections using the configured SSH key
 
 The verbose output also surfaces several service principals and managed identities (a privileged SP, the Tycho DB admin SP, code-execution users, and the VM managed identities) for direct access. Their exact privileges and intended access paths are spoilers - see [`attacks/permissions.md`](attacks/permissions.md).
 
-Now the lab should be correctly configured in you Azure subscription inside a new resource group `lab_uniq_id-ExpanseAzureSecLab` (depending on your configuration).
+Now the lab should be correctly configured in your Azure subscription inside the resource group you set via `resource_grp_name` (default `ExpanseAzureSecLab`).
 
 **In case of errors when rolling out:**
 First, try to run `terraform apply` again. Sometimes the Azure backend is too slow in updating information in the background and Terraform may read stale role/identity info due to Azure propagation delays. If rolling out the lab permanently does not work open an issue.
 
-## Architecture
-
-The general assets can be found in the following diagram (or `AzureLabAssets.pdf`):
-![Img](images/AzureLabAssets.png)
-
-There also is a nice diagram illustrating the architecture of the lab containing most valuable loot and most role/permission links, therefore also serving as a kind of attack map. The diagram might not be exhaustive, maybe you will find more ;). This one can be found in the `attacks` folder.
-
-Refer to the `AzureLab_Architecture.pdf`.
-
 ## Destroying / Clean-up
 To clean up the lab, run
-```
+```bash
 ./deploy.sh --destroy
 ```
 from the project root (add `--auto-approve` to skip the confirmation prompt). This is equivalent to running
-```
+```bash
 terraform destroy
 ```
 directly in `tfscripts/`.
@@ -205,17 +221,17 @@ After performing the destroy, all resources and users are deleted. To redeploy, 
 
 ### Cleanup-troubleshoot
 In case something goes wrong with cleanup and not everything is cleaned up (should not happen, but let's say you internet gives out during the operation) just try again to:
-```
+```bash
 terraform destroy
 ```
 
 You might run into the `for each` dependency issues again here. In that case first do:
-```
+```bash
 terraform apply -target azuread_user.users
 terraform apply -target azuread_service_principal.sp
 ```
 followed by an additional 
-```
+```bash
 terraform destroy
 ```
 ---

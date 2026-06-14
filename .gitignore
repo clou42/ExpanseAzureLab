@@ -11,3 +11,13 @@ users.csv
 verify/
 attacks/*_walkthrough.md
 attacks/chains.md
+
+# Retired hand-drawn diagrams
+attacks/AzureLabFull.pdf
+images/AzureLabFull.png
+images/AzureLabAssets.png
+AzureLabAssets.pdf
+
+# Diagram generators — kept locally, not tracked (the rendered outputs are committed instead).
+attacks/gen_attack_chart.py
+attacks/gen_snippets.py
