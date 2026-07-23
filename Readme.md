@@ -236,6 +236,12 @@ terraform destroy
 ```
 ---
 
+## Thanks
+
+Thanks to [Euzebius](https://github.com/Euzebius) for helping test the lab and for many great discussions. 
+
+---
+
 **License:** This project is licensed under GPL-3.0. See [LICENSE](LICENSE) for details.
 
 This project is not officially affiliated with "The Expanse" brand or its rights holders—the theme is just for fun.
