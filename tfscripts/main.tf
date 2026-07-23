@@ -982,7 +982,7 @@ resource "azurerm_linux_virtual_machine" "rocinante" {
   patch_mode            = "AutomaticByPlatform"
   reboot_setting        = "IfRequired"
   resource_group_name   = azurerm_resource_group.res-114.name
-  size                  = "Standard_D2s_v3"
+  size                  = "Standard_D2as_v5"
   additional_capabilities {
   }
   admin_ssh_key {
@@ -1071,7 +1071,7 @@ resource "azurerm_linux_virtual_machine" "scopuli" {
   patch_mode            = "AutomaticByPlatform"
   reboot_setting        = "IfRequired"
   resource_group_name   = azurerm_resource_group.res-114.name
-  size                  = "Standard_D2s_v3"
+  size                  = "Standard_D2as_v5"
   additional_capabilities {
   }
   admin_ssh_key {
@@ -1104,7 +1104,7 @@ resource "azurerm_windows_virtual_machine" "donnager" {
   name                  = "Donnager"
   location              = azurerm_resource_group.res-114.location
   resource_group_name   = azurerm_resource_group.res-114.name
-  size                  = "Standard_B2s" # 2 vCPU, 4GB RAM
+  size                  = "Standard_B2ls_v2" # 2 vCPU, 4GB RAM
   admin_username        = "yao"
   admin_password        = var.config.donnager_admin_password
   network_interface_ids = [azurerm_network_interface.donnager_nic.id]
@@ -1797,7 +1797,7 @@ resource "azurerm_kubernetes_cluster" "earth_fleet" {
 
   default_node_pool {
     name                 = "core${lower(var.config.lab_uniq_id)}"
-    vm_size              = "Standard_B4ms"
+    vm_size              = "Standard_B4als_v2"
     node_count           = 1
     orchestrator_version = "1.33"
   }
