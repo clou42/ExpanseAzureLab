@@ -1793,13 +1793,12 @@ resource "azurerm_kubernetes_cluster" "earth_fleet" {
   location            = var.config.region
   resource_group_name = var.config.resource_grp_name
   dns_prefix          = "unfleet${var.config.lab_uniq_id}"
-  kubernetes_version  = "1.33"
+  # Version intentionally unpinned: AKS assigns its current default.
 
   default_node_pool {
-    name                 = "core${lower(var.config.lab_uniq_id)}"
-    vm_size              = "Standard_B4als_v2"
-    node_count           = 1
-    orchestrator_version = "1.33"
+    name       = "core${lower(var.config.lab_uniq_id)}"
+    vm_size    = "Standard_B4als_v2"
+    node_count = 1
   }
 
   identity { type = "SystemAssigned" }
